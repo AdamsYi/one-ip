@@ -17,7 +17,7 @@ export async function checkCdnProvider(
         ? text.match(/^colo=(.+)$/m)?.[1]?.trim()
         : text.trim();
     if (!node || node.length > 200 || node.includes("<"))
-      throw new Error(t("未返回有效节点标识"));
+      throw new Error(t("cdn.noValidNodeIdentifierReturned"));
     return { node, cache: "—" };
   }
   const headers = await request<Headers>(
@@ -38,7 +38,8 @@ export async function checkCdnProvider(
     if (key === "server" && !/bunnycdn-[\w-]+/i.test(value)) return [];
     return [`${key}: ${value}`];
   });
-  if (!values.length) throw new Error(t("节点头未公开或跨域受限"));
+  if (!values.length)
+    throw new Error(t("cdn.nodeHeadersExposedCrossOriginAccessRestricted"));
   return {
     node: values.join(" · "),
     cache: headers.get("x-cache") ?? headers.get("cf-cache-status") ?? "—",

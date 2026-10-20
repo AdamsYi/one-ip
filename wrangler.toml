@@ -30,6 +30,11 @@ name = "ACTION_LIMITER"
 namespace_id = "1002"
 simple = { limit = 5, period = 60 }
 
+[[ratelimits]]
+name = "ICON_LIMITER"
+namespace_id = "1003"
+simple = { limit = 180, period = 60 }
+
 # Local development forwards all page and asset requests to Vite.
 [env.local.assets]
 directory = "./public"
@@ -46,3 +51,8 @@ simple = { limit = 180, period = 60 }
 name = "ACTION_LIMITER"
 namespace_id = "1002"
 simple = { limit = 5, period = 60 }
+
+[[env.local.ratelimits]]
+name = "ICON_LIMITER"
+namespace_id = "1003"
+simple = { limit = 180, period = 60 }

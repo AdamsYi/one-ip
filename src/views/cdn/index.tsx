@@ -10,7 +10,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { t } from "@/i18n";
 import { useQueries } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { checkCdnProvider } from "./api";
 import { providers, providerWebsite } from "./providers";
 
@@ -24,42 +24,45 @@ type Row = {
 const columns: ColumnDef<Row>[] = [
   {
     accessorKey: "name",
-    header: t("厂商"),
+    header: t("common.vendor"),
     cell: ({ row }) => (
       <span className="site-cell">
         <SiteLogo website={providerWebsite(row.original.name)} />
-        <OverflowDetailText text={row.original.name} title={t("CDN 厂商")} />
+        <OverflowDetailText
+          text={row.original.name}
+          title={t("cdn.cdnProvider")}
+        />
       </span>
     ),
   },
   {
     id: "node",
-    header: t("节点 / 响应标识"),
+    header: t("cdn.nodeResponseIdentifier"),
     cell: ({ row }) =>
       row.original.loading ? (
-        <Pending>{t("检测中...")}</Pending>
+        <Pending>{t("common.checkingDots")}</Pending>
       ) : (
-        <OverflowDetailText text={row.original.node ?? t("未知")} />
+        <OverflowDetailText text={row.original.node ?? t("common.unknown")} />
       ),
   },
   {
     accessorKey: "cache",
-    header: t("缓存"),
+    header: t("cdn.cached"),
     cell: ({ row }) => (
       <OverflowDetailText
         text={row.original.cache ?? "—"}
-        title={t("缓存状态")}
+        title={t("cdn.cacheStatus")}
       />
     ),
   },
   {
     id: "status",
-    header: t("状态"),
+    header: t("common.status"),
     cell: ({ row }) =>
       row.original.loading ? (
-        <Pending>{t("检测中...")}</Pending>
+        <Pending>{t("common.checkingDots")}</Pending>
       ) : (
-        <OverflowDetailText text={row.original.error ?? t("已完成")} />
+        <OverflowDetailText text={row.original.error ?? t("common.complete")} />
       ),
   },
 ];
@@ -78,14 +81,14 @@ export default function CdnPage() {
   const busy = queries.some((query) => query.isFetching);
   return (
     <>
-      <PageHeading title={t("CDN 命中节点")} description="" />
+      <PageHeading title={t("cdn.cdnServingNodes")} description="" />
       <div className="toolbar">
         <ActionButton busy={busy} onClick={() => setRound((n) => n + 1)}>
-          {busy ? t("检测中...") : t("重新检测")}
+          {busy ? t("common.checkingDots") : t("common.runAgain")}
         </ActionButton>
         <span className="small muted">
           {queries.filter((query) => query.isSuccess).length}/{providers.length}{" "}
-          {t("可读取")}
+          {t("cdn.readable")}
         </span>
       </div>
       <Card>

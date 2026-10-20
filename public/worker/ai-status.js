@@ -4,9 +4,7 @@ import { parseTelegramStatus } from "./telegram-status.js";
 const unavailable = () => new HttpError(502, "官方状态数据暂不可用");
 
 async function pageText(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-  if (!response.ok) throw unavailable();
-  return response.text();
+  return upstream(url, {}, 2_000_000, "text");
 }
 
 function rssItems(xml) {

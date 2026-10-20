@@ -35,23 +35,86 @@ export function certificateNames(records, domain) {
   return [...names].sort();
 }
 
-export async function lookupSubdomains(value) {
-  const domain = subdomainTarget(value);
+function hostSearchNames(text, domain) {
+  const body = text.trim();
+  if (
+    /api (?:count|limit).*exceeded|rate limit|quota|too many requests/i.test(
+      body,
+    )
+  )
+    throw new HttpError(429, "外部数据源限流，请稍后重试");
+  if (/^no (?:dns |host )?(?:records|results|hosts) found[.!]?$/i.test(body))
+    return [];
+  if (!body) throw new HttpError(502, "子域名数据格式异常");
+  const records = body.split(/\r?\n/).map((line) => {
+    const fields = line.split(",");
+    if (fields.length !== 2 || !isIP(fields[1].trim()))
+      throw new HttpError(502, "子域名数据格式异常");
+    return { name_value: fields[0] };
+  });
+  return certificateNames(records, domain);
+}
+
+async function lookupHostSearch(domain) {
+  const url = new URL("https://api.hackertarget.com/hostsearch/");
+  url.searchParams.set("q", domain);
+  const text = await upstream(
+    url.href,
+    {
+      signal: AbortSignal.timeout(4500),
+      cf: { cacheTtl: 300, cacheEverything: true },
+    },
+    250_000,
+    "text",
+  );
+  return {
+    source: "HackerTarget",
+    sourceUrl: url.href,
+    limit: 50,
+    names: hostSearchNames(text, domain),
+  };
+}
+
+async function lookupCertificates(domain) {
   const url = new URL("https://crt.sh/");
   url.searchParams.set("q", `%.${domain}`);
   url.searchParams.set("output", "json");
   const records = await upstream(
     url.href,
     {
+      signal: AbortSignal.timeout(5500),
       cf: { cacheTtl: 300, cacheEverything: true },
     },
     8_000_000,
   );
   return {
-    domain,
     source: "crt.sh",
     sourceUrl: url.href,
     names: certificateNames(records, domain),
-    checkedAt: new Date().toISOString(),
   };
+}
+
+export async function lookupSubdomains(value) {
+  const domain = subdomainTarget(value);
+  let empty;
+  let limited = false;
+  // Both attempts fit inside the browser client's 12-second request deadline.
+  for (const lookup of [lookupHostSearch, lookupCertificates]) {
+    try {
+      const result = {
+        domain,
+        ...(await lookup(domain)),
+        checkedAt: new Date().toISOString(),
+      };
+      if (result.names.length) return result;
+      empty ??= result;
+    } catch (error) {
+      limited ||= error instanceof HttpError && error.status === 429;
+    }
+  }
+  if (empty) return empty;
+  throw new HttpError(
+    limited ? 429 : 502,
+    limited ? "外部数据源限流，请稍后重试" : "子域名数据源暂不可用，请稍后重试",
+  );
 }

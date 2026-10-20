@@ -41,14 +41,11 @@ export async function probeAiDomain(
       median: elapsed,
       status: "response",
       description: readable
-        ? t(
-            "已读取并校验 {0} 的边缘网络响应；不代表登录、对话或验证码一定可用。",
-            [domain],
-          )
-        : t(
-            "收到 {0}{1} 的资源响应；不代表登录或对话可用，也无法读取跨域 HTTP 状态码。",
-            [domain, path],
-          ),
+        ? t("ai.readValidatedEdgeNetworkResponseDoesGuaranteeLogin", [domain])
+        : t("ai.receivedResourceResponseDoesGuaranteeLoginChatAvailability", [
+            domain,
+            path,
+          ]),
     };
   } catch (error) {
     if (signal?.aborted) throw error;
@@ -58,8 +55,6 @@ export async function probeAiDomain(
     samples,
     median: null,
     status: "unknown",
-    description: t(
-      "探测未取得有效响应（单次限时 3 秒），已跳过；可能超时、被内容拦截或受站点防护限制。",
-    ),
+    description: t("ai.validResponseWithinOneSecondProbeLimitSkipped"),
   };
 }

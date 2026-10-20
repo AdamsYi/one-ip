@@ -39,7 +39,7 @@ export function QuickChecks() {
       <Card>
         <CardHeader>
           <div className="row-between">
-            <CardTitle>{t("DNS / WebRTC 出口")}</CardTitle>
+            <CardTitle>{t("home.dnsWebrtcEgress")}</CardTitle>
             <Button
               size="sm"
               variant="secondary"
@@ -49,7 +49,11 @@ export function QuickChecks() {
                 void rtc.refetch();
               }}
             >
-              {busy ? <Pending>{t("检测中…")}</Pending> : t("重新检测")}
+              {busy ? (
+                <Pending>{t("common.checking")}</Pending>
+              ) : (
+                t("common.runAgain")
+              )}
             </Button>
           </div>
         </CardHeader>
@@ -60,16 +64,16 @@ export function QuickChecks() {
                 className="shrink-0 text-muted-foreground"
                 to="/network/dns"
               >
-                {t("DNS 出口")}
+                {t("common.dnsEgress")}
               </Link>
             </UnderlineHover>
             <span className="min-w-0 text-muted-foreground">
               {dns.isFetching ? (
-                <Pending>{t("采样中…")}</Pending>
+                <Pending>{t("home.sampling")}</Pending>
               ) : dns.data ? (
                 <IpText ip={dns.data.ip} />
               ) : (
-                t("暂不可用")
+                t("common.unavailable")
               )}
             </span>
           </div>
@@ -84,11 +88,11 @@ export function QuickChecks() {
             </UnderlineHover>
             <span className="min-w-0 text-muted-foreground">
               {rtc.isFetching ? (
-                <Pending>{t("采样中…")}</Pending>
+                <Pending>{t("home.sampling")}</Pending>
               ) : rtc.data ? (
                 <CompactText text={rtc.data.verdict} />
               ) : (
-                t("暂不可用")
+                t("common.unavailable")
               )}
             </span>
           </div>
@@ -98,13 +102,13 @@ export function QuickChecks() {
             </p>
           )}
           <p className="home-note mt-3">
-            {t("DNS 单次采样；未采集到地址不代表没有泄漏，点击查看完整检测。")}
+            {t("home.oneDnsSampleAddressCollectedDoesRuleOut")}
           </p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>{t("全球 Ping / 地址查询")}</CardTitle>
+          <CardTitle>{t("home.globalPingAddressLookup")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form
@@ -118,15 +122,15 @@ export function QuickChecks() {
           >
             <InputGroup>
               <InputGroupInput
-                aria-label={t("快速查询 IP 或域名")}
-                placeholder={t("输入 IP 或域名")}
+                aria-label={t("home.quickIpOrDomainLookup")}
+                placeholder={t("home.enterAnIpOrDomain")}
                 value={target}
                 onChange={(event) => setTarget(event.target.value)}
               />
               {target.trim() && (
                 <InputGroupAddon align="inline-end">
                   <InputGroupButton type="submit" variant="ghost">
-                    {t("全球 Ping")}
+                    {t("common.globalPing")}
                   </InputGroupButton>
                 </InputGroupAddon>
               )}
@@ -144,7 +148,7 @@ export function QuickChecks() {
                   )
                 }
               >
-                {t("IP 信息")}
+                {t("home.ipDetails")}
               </Button>
               <Button type="button" variant="outline" size="sm" asChild>
                 <Link
@@ -154,13 +158,13 @@ export function QuickChecks() {
                       : "/network/whois"
                   }
                 >
-                  {t("WHOIS 查询")}
+                  {t("common.whoisLookup")}
                 </Link>
               </Button>
             </div>
           </form>
           <p className="home-note mt-3">
-            {t("进入详情后选择地区并开始测量，默认优选模式。")}
+            {t("home.chooseRegionsStartMeasuringDetailsPageOptimizedMode")}
           </p>
         </CardContent>
       </Card>

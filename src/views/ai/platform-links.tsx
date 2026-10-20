@@ -7,12 +7,15 @@ export function AiPlatformLinks({ platform }: { platform: AiPlatform }) {
   return (
     <div className="mt-4 flex flex-wrap gap-2">
       {[
-        { name: t("官网"), url: `https://${platform.domain}` },
+        { name: t("ai.website"), url: `https://${platform.domain}` },
         {
-          name: platform.id === "qwen" ? t("API 地址（美国）") : t("API 地址"),
+          name:
+            platform.id === "qwen"
+              ? t("ai.apiEndpointUs")
+              : t("ai.apiEndpoint"),
           url: platform.apiUrl,
         },
-        { name: t("API 文档"), url: platform.docsUrl },
+        { name: t("common.apiDocumentation"), url: platform.docsUrl },
       ].map((link) => (
         <Button variant="outline" size="sm" asChild key={link.name}>
           <a href={link.url} target="_blank" rel="noreferrer">
@@ -21,13 +24,15 @@ export function AiPlatformLinks({ platform }: { platform: AiPlatform }) {
         </Button>
       ))}
       <Button variant="outline" size="sm" asChild>
-        <Link to={`/status?service=${platform.statusId}`}>{t("服务状态")}</Link>
+        <Link to={`/status?service=${platform.statusId}`}>
+          {t("navigation.serviceStatus")}
+        </Link>
       </Button>
       <Button variant="outline" size="sm" asChild>
-        <Link to="/browser/privacy">{t("权限与隐私")}</Link>
+        <Link to="/browser/privacy">{t("common.permissionsPrivacy")}</Link>
       </Button>
       <Button variant="outline" size="sm" asChild>
-        <Link to="/network/ip">{t("查询公网 IP")}</Link>
+        <Link to="/network/ip">{t("ai.lookUpPublicIp")}</Link>
       </Button>
       {["gpt", "claude"].includes(platform.id) && (
         <Button variant="outline" size="sm" asChild>
@@ -40,7 +45,7 @@ export function AiPlatformLinks({ platform }: { platform: AiPlatform }) {
             target="_blank"
             rel="noreferrer"
           >
-            {t("支持地区 ↗")}
+            {t("ai.supportedRegions")}
           </a>
         </Button>
       )}

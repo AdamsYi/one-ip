@@ -10,29 +10,29 @@ export function ipProfile(data: CoffeeIp) {
       ? data.trust_score
       : null;
   const companyTypes: Record<string, string> = {
-    isp: t("网络运营商"),
-    hosting: t("托管服务商"),
-    business: t("商业企业"),
-    education: t("教育机构"),
-    government: t("政府机构"),
-    banking: t("金融机构"),
+    isp: t("ip.profile.networkOperator"),
+    hosting: t("ip.profile.hostingProvider"),
+    business: t("ip.profile.business"),
+    education: t("ip.profile.education"),
+    government: t("ip.profile.government"),
+    banking: t("ip.profile.finance"),
   };
   const companyType = data.company_type?.trim().toLowerCase();
   const company = companyType
     ? (companyTypes[companyType] ?? data.company_type!)
-    : t("未知");
+    : t("common.unknown");
   const conflict = data.isResidential === true && data.is_datacenter === true;
   const type = data.is_public_service
-    ? t("公共服务")
+    ? t("common.publicService")
     : conflict
-      ? t("类型标记冲突")
+      ? t("ip.profile.conflictingTypes")
       : data.is_mobile
-        ? t("移动网络")
+        ? t("common.mobileNetwork")
         : data.isResidential
-          ? t("家庭住宅 IP")
+          ? t("common.residentialIp")
           : data.is_datacenter
-            ? t("数据中心")
-            : t("未知");
+            ? t("common.datacenter")
+            : t("common.unknown");
   const country = data.countryCode?.trim().toUpperCase();
   const registered = data.registered_country_code?.trim().toUpperCase();
   const sameCountry =
@@ -41,10 +41,10 @@ export function ipProfile(data: CoffeeIp) {
       : null;
   const flags: [string, boolean | undefined][] = [
     ["VPN", data.is_vpn],
-    [t("代理"), data.is_proxy],
+    [t("common.proxy"), data.is_proxy],
     ["Tor", data.is_tor],
-    [t("爬虫标记"), data.is_crawler],
-    [t("滥用标记"), data.is_abuser],
+    [t("common.crawlerFlag"), data.is_crawler],
+    [t("common.abuseFlag"), data.is_abuser],
     ["Bogon", data.is_bogon],
   ];
   const detected = flags
@@ -66,36 +66,36 @@ export function ipProfile(data: CoffeeIp) {
     sameCountry === true &&
     clear;
   const seriousFlags = [
-    ...(data.is_abuser ? [t("滥用标记")] : []),
+    ...(data.is_abuser ? [t("common.abuseFlag")] : []),
     ...(data.is_bogon ? ["Bogon"] : []),
     ...threats,
   ];
   const risk = seriousFlags.length
     ? {
         severity: "danger" as const,
-        title: t("发现风险信号"),
+        title: t("ip.profile.riskSignalsDetected"),
         flags: [...new Set([...detected, ...threats])],
         description: t(
-          "数据源返回滥用、保留地址或威胁记录。建议核实网络来源，必要时更换出口后重新检测。",
+          "ip.profile.sourceReportsAbuseReservedAddressThreatRecordsVerify",
         ),
       }
     : score !== null && score < 45 && !data.is_public_service
       ? {
           severity: "danger" as const,
-          title: t("信誉分偏低"),
+          title: t("ip.profile.lowReputationScore"),
           flags: detected,
           description: t(
-            "当前信誉分为 {0}/100，建议结合网络标记核实使用风险。",
+            "ip.profile.currentReputationScore100ReviewNetworkFlagsAssess",
             [score],
           ),
         }
       : detected.length
         ? {
             severity: "notice" as const,
-            title: t("检测到网络标记"),
+            title: t("ip.profile.networkFlagsDetectedLabel"),
             flags: detected,
             description: t(
-              "代理、VPN、Tor 或爬虫标记可能影响部分网站的访问验证；标记本身不等于恶意行为。",
+              "ip.profile.proxyVpnTorCrawlerFlagsMayAffectVerification",
             ),
           }
         : null;
@@ -105,7 +105,7 @@ export function ipProfile(data: CoffeeIp) {
     conflict ||
     !clear ||
     score === null ||
-    type === t("未知") ||
+    type === t("common.unknown") ||
     !companyType
       ? null
       : preferred
@@ -115,50 +115,47 @@ export function ipProfile(data: CoffeeIp) {
           : score >= 75
             ? "B"
             : "C";
-  let grade = t("信息不足");
-  let explanation = t("部分类型或风险数据缺失，暂不判断配置档位。");
+  let grade = t("ip.profile.insufficientData");
+  let explanation = t("ip.profile.someTypeRiskDataMissingSoProfileTier");
   let tone: "good" | "warn" | "bad" | "neutral" = "neutral";
   if (data.is_public_service) {
-    grade = t("公共服务网络");
-    explanation = t(
-      "公共 DNS、CDN 等服务可能使用任播，不按个人住宅或机房出口评定档位。",
-    );
+    grade = t("ip.profile.publicServiceNetwork");
+    explanation = t("ip.profile.publicDnsCdnServicesMayUseAnycastRated");
   } else if (conflict) {
-    grade = t("类型待确认");
+    grade = t("ip.profile.typeNeedsConfirmation");
     explanation = t(
-      "数据源同时返回住宅与数据中心标记，不能据此认定为优质住宅。",
+      "ip.profile.sourceReportsBothResidentialDatacenterFlagsSoPreferred",
     );
     tone = "warn";
   } else if (detected.length || threats.length) {
-    grade = t("存在网络标记");
-    explanation = t("已返回 {0}；代理、VPN 等标记本身不等于恶意行为。", [
-      [...detected, ...threats].join("、"),
-    ]);
+    grade = t("ip.profile.networkFlagsDetected");
+    explanation = t(
+      "ip.profile.reportedFlagsProxyVpnFlagsDoThemselvesIndicate",
+      [[...detected, ...threats].join("、")],
+    );
     tone = data.is_abuser || data.is_bogon || threats.length ? "bad" : "warn";
   } else if (preferred) {
-    grade = t("住宅优选");
+    grade = t("ip.profile.preferredResidential");
     explanation = t(
-      "住宅 IP、ISP 厂商、注册地一致、信誉分 ≥ 90，且六项网络标记均未检出。",
+      "ip.profile.residentialIpIspCompanyMatchingRegistrationCountryReputation",
     );
     tone = "good";
-  } else if (score !== null && type !== t("未知") && clear) {
+  } else if (score !== null && type !== t("common.unknown") && clear) {
     grade =
       score >= 90
         ? data.is_mobile
-          ? t("高信誉网络")
+          ? t("ip.profile.highReputationNetwork")
           : data.is_datacenter
-            ? t("高信誉机房")
+            ? t("ip.profile.highReputationHosting")
             : data.isResidential
-              ? t("高信誉住宅")
-              : t("高信誉网络")
+              ? t("ip.profile.highReputationResidential")
+              : t("ip.profile.highReputationNetwork")
         : score >= 75
-          ? t("信誉良好")
+          ? t("ip.profile.goodReputation")
           : score >= 45
-            ? t("信誉一般")
-            : t("信誉偏低");
-    explanation = t(
-      "按数据源信誉分分档：90–100 高信誉，75–89 良好，45–74 一般，0–44 偏低。",
-    );
+            ? t("ip.profile.moderateReputation")
+            : t("ip.profile.lowReputation");
+    explanation = t("ip.profile.tiersUseSourceReputationScore90100High");
     tone = score >= 75 ? "good" : score >= 45 ? "warn" : "bad";
   }
   const checks: {
@@ -168,9 +165,9 @@ export function ipProfile(data: CoffeeIp) {
     passed: boolean | null;
   }[] = [
     {
-      label: t("IP 类型"),
+      label: t("ip.profile.ipType"),
       value: type,
-      requirement: t("住宅且非机房、非移动网络"),
+      requirement: t("ip.profile.residentialNotHostingOrMobile"),
       passed:
         data.is_public_service ||
         conflict ||
@@ -183,38 +180,38 @@ export function ipProfile(data: CoffeeIp) {
             : null,
     },
     {
-      label: t("厂商类型"),
+      label: t("ip.profile.companyType"),
       value: company,
-      requirement: t("厂商类型为 ISP"),
+      requirement: t("ip.profile.ispCompanyType"),
       passed: companyType ? companyType === "isp" : null,
     },
     {
-      label: t("注册地对照"),
+      label: t("ip.profile.registration"),
       value:
         sameCountry === null
-          ? t("待确认")
+          ? t("common.pendingConfirmation")
           : sameCountry
-            ? t("注册地一致")
-            : t("注册地不同"),
-      requirement: t("注册国家与定位国家一致"),
+            ? t("ip.profile.countryMatches")
+            : t("ip.profile.differentRegisteredCountry"),
+      requirement: t("ip.profile.registeredAndLocatedCountriesMatch"),
       passed: sameCountry,
     },
     {
-      label: t("网络标记"),
+      label: t("ip.profile.networkFlags"),
       value:
         detected.length || threats.length
-          ? t("有标记")
+          ? t("ip.profile.flagsDetected")
           : unknownFlags
-            ? t("缺少 {0} 项数据", [unknownFlags])
-            : t("6 项均未检出"),
-      requirement: t("六项标记均未检出，且无已知威胁"),
+            ? t("ip.profile.fieldsMissing", [unknownFlags])
+            : t("ip.profile.all6Negative"),
+      requirement: t("ip.profile.sixNegativeFlagsAndNoKnownThreats"),
       passed:
         detected.length || threats.length ? false : unknownFlags ? null : true,
     },
     {
-      label: t("IP 信誉分"),
-      value: score === null ? t("未知") : `${score} / 100`,
-      requirement: t("信誉分 ≥ 90"),
+      label: t("common.ipReputation"),
+      value: score === null ? t("common.unknown") : `${score} / 100`,
+      requirement: t("ip.profile.reputation90"),
       passed: score === null ? null : score >= 90,
     },
   ];

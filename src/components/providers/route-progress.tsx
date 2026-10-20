@@ -16,9 +16,7 @@ export function RouteProgress() {
       barSelector: '[role="progressbar"]',
       trickle: !reducedMotion,
       speed: reducedMotion ? 0 : 200,
-      template: t(
-        '<div class="bar" role="progressbar" aria-label="页面切换"><div class="peg"></div></div>',
-      ),
+      template: `<div class="bar" role="progressbar" aria-label="${t("navigation.pageTransition")}"><div class="peg"></div></div>`,
     });
     return () => {
       NProgress.done();

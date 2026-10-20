@@ -48,16 +48,16 @@ import { useScenarioAccess } from "./use-scenario-access";
 import { useScenarioEvidence } from "./use-scenario-evidence";
 
 const stateLabels: Record<EvidenceState, string> = {
-  unmeasured: t("待检测"),
-  running: t("检测中…"),
-  complete: t("已取得证据"),
-  partial: t("证据不完整"),
-  failed: t("请求被拒绝"),
-  "rate-limited": t("检测限流"),
-  unverifiable: t("无法核验"),
-  mismatch: t("出口不匹配"),
-  expired: t("结果已过期"),
-  cancelled: t("已取消"),
+  unmeasured: t("common.notChecked"),
+  running: t("common.checking"),
+  complete: t("ip.scenarios.evidenceCollected"),
+  partial: t("ip.scenarios.incompleteEvidence"),
+  failed: t("ip.scenarios.requestRefused"),
+  "rate-limited": t("ip.scenarios.rateLimited"),
+  unverifiable: t("ip.scenarios.unverifiable"),
+  mismatch: t("ip.scenarios.egressMismatch"),
+  expired: t("ip.scenarios.expired"),
+  cancelled: t("common.cancelled"),
 };
 const stateTone = (state: EvidenceState) =>
   ["unmeasured", "cancelled", "unverifiable"].includes(state)
@@ -70,19 +70,19 @@ const stateTone = (state: EvidenceState) =>
           ? "warning"
           : "info";
 const metricLabels: Record<string, string> = {
-  latency: t("空载延迟"),
-  jitter: t("抖动"),
-  download: t("下载速度"),
-  upload: t("上传速度"),
-  downLoadedLatency: t("下载负载延迟"),
-  upLoadedLatency: t("上传负载延迟"),
-  packetLoss: t("UDP 丢包率"),
-  latencySamples: t("延迟样本不足"),
-  packetSamples: t("UDP 样本不足"),
-  loadedSamples: t("负载延迟样本不足"),
-  downloadSamples: t("下载样本不足"),
-  uploadSamples: t("上传样本不足"),
-  aimScore: t("AIM 评分未产生"),
+  latency: t("ip.scenarios.unloadedLatency"),
+  jitter: t("ip.scenarios.jitter"),
+  download: t("ip.scenarios.download"),
+  upload: t("ip.scenarios.upload"),
+  downLoadedLatency: t("ip.scenarios.downloadLoadedLatency"),
+  upLoadedLatency: t("ip.scenarios.uploadLoadedLatency"),
+  packetLoss: t("ip.scenarios.udpPacketLoss"),
+  latencySamples: t("ip.scenarios.insufficientLatencySamples"),
+  packetSamples: t("ip.scenarios.insufficientUdpSamples"),
+  loadedSamples: t("ip.scenarios.insufficientLoadedSamples"),
+  downloadSamples: t("ip.scenarios.insufficientDownloadSamples"),
+  uploadSamples: t("ip.scenarios.insufficientUploadSamples"),
+  aimScore: t("ip.scenarios.aimScoreUnavailable"),
 };
 export function ScenarioStars({
   stars,
@@ -95,7 +95,7 @@ export function ScenarioStars({
     <span
       className="ip-scenario-stars"
       data-rating={Math.floor(stars)}
-      aria-label={t("评分：{0}/5", [stars])}
+      aria-label={t("ip.scenarios.rating5", [stars])}
     >
       {Array.from({ length: 5 }, (_, index) => (
         <span key={index} className="ip-scenario-star" aria-hidden="true">
@@ -137,44 +137,48 @@ function EvidenceDetails({ evidence }: { evidence: Evidence }) {
   return (
     <div className="ip-measurement-detail">
       <p>
-        {t("测量来源")}：{evidence.source} · {evidence.protocol} ·{" "}
+        {t("ip.scenarios.measurementSource")}：{evidence.source} ·{" "}
+        {evidence.protocol} ·{" "}
         {evidence.addressFamily === "unknown"
-          ? t("地址族未核验")
+          ? t("ip.scenarios.addressFamilyUnverified")
           : evidence.addressFamily}
       </p>
       <p>
         {evidence.direction === "probe-inbound"
-          ? t("远端探针 → 查询 IP")
-          : t("当前浏览器 → 目标服务")}
+          ? t("ip.scenarios.remoteProbesQueriedIp")
+          : t("ip.scenarios.currentBrowserTargetService")}
         ：<span className="break-all">{evidence.target}</span>
       </p>
       {evidence.direction === "browser-outbound" && (
         <p>
-          {t("测量出口")}：{evidence.egressBefore ?? t("未知")} →{" "}
-          {evidence.egressAfter ?? t("未知")}
+          {t("ip.scenarios.observedEgress")}：
+          {evidence.egressBefore ?? t("common.unknown")} →{" "}
+          {evidence.egressAfter ?? t("common.unknown")}
         </p>
       )}
       <p>
-        {t("检测时间")}：{new Date(evidence.checkedAt).toLocaleTimeString()} ·{" "}
-        {t("有效期 5 分钟")}
+        {t("ip.scenarios.measuredAt")}：
+        {new Date(evidence.checkedAt).toLocaleTimeString()} ·{" "}
+        {t("ip.scenarios.validFor5Minutes")}
       </p>
       {!!evidence.samples.length && (
         <>
           <p>
-            {t("样本 {0} 次，可读响应 {1} 次，不透明响应 {2} 次", [
+            {t("ip.scenarios.samplesReadableOpaqueResponses", [
               evidence.samples.length,
               readable,
               opaque,
             ])}
-            {median !== null && ` · ${t("HTTP 耗时中位数")} ${median} ms`}
+            {median !== null &&
+              ` · ${t("ip.scenarios.medianHttpDuration")} ${median} ms`}
           </p>
           <p>
-            {t("HTTP 状态")}：
+            {t("ip.scenarios.httpStatus")}：
             {[
               ...new Set(
                 evidence.samples.map((sample) => sample.status).filter(Boolean),
               ),
-            ].join(" / ") || t("无法读取")}
+            ].join(" / ") || t("ip.scenarios.unreadable")}
           </p>
         </>
       )}
@@ -190,7 +194,7 @@ function EvidenceDetails({ evidence }: { evidence: Evidence }) {
                   <dt>{label}</dt>
                   <dd>
                     {typeof value !== "number" || !Number.isFinite(value)
-                      ? t("未知")
+                      ? t("common.unknown")
                       : key === "packetLoss"
                         ? `${(value * 100).toFixed(1)}%`
                         : key === "download" || key === "upload"
@@ -203,7 +207,7 @@ function EvidenceDetails({ evidence }: { evidence: Evidence }) {
         </dl>
       )}
       <details>
-        <summary>{t("查看原始样本")}</summary>
+        <summary>{t("ip.scenarios.viewRawSamples")}</summary>
         <pre className="max-h-36 overflow-auto whitespace-pre-wrap break-all text-[10px]">
           {JSON.stringify(evidence.raw ?? evidence.samples, null, 2)}
         </pre>
@@ -228,9 +232,9 @@ function AccessRows({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t("网站")}</TableHead>
-            <TableHead>{t("测试记录")}</TableHead>
-            <TableHead>{t("延迟")}</TableHead>
+            <TableHead>{t("common.website")}</TableHead>
+            <TableHead>{t("common.testHistory")}</TableHead>
+            <TableHead>{t("common.latency")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -239,24 +243,24 @@ function AccessRows({
             const rating = accessRating(evidence, ip, now);
             const running = !evidence || evidence.state === "running";
             const status = rating.stale
-              ? t("结果已过期")
+              ? t("ip.scenarios.expired")
               : evidence?.state === "cancelled"
-                ? t("已取消")
+                ? t("common.cancelled")
                 : evidence?.state === "rate-limited"
-                  ? t("检测限流")
+                  ? t("ip.scenarios.rateLimited")
                   : evidence?.state === "failed"
-                    ? t("请求被拒绝")
+                    ? t("ip.scenarios.requestRefused")
                     : rating.responses
                       ? rating.fluctuating
-                        ? t("本轮有波动")
-                        : t("已取得响应")
+                        ? t("ip.scenarios.inconsistentResponses")
+                        : t("ip.scenarios.responseReceived")
                       : running
-                        ? t("检测中…")
+                        ? t("common.checking")
                         : evidence?.samples.some(
                               (sample) => sample.error === "network",
                             )
-                          ? t("检测受阻")
-                          : t("检测超时");
+                          ? t("ip.scenarios.probeBlocked")
+                          : t("ip.scenarios.probeTimedOut");
             const open = expanded === target.url;
             const toggle = () => setExpanded(open ? null : target.url);
             return (
@@ -286,7 +290,7 @@ function AccessRows({
                   <TableCell>
                     <div
                       className="ping-dots"
-                      aria-label={t("取得响应 {0}/{1}", [
+                      aria-label={t("ip.scenarios.responses", [
                         rating.responses,
                         rating.total,
                       ])}
@@ -302,12 +306,12 @@ function AccessRows({
                             className={`ping-dot ${!sample ? "" : !good ? "dot-fail" : sample.elapsedMs < 100 ? "dot-good" : sample.elapsedMs < 400 ? "dot-warn" : "dot-slow"}`}
                             title={
                               !sample
-                                ? t("未采样")
+                                ? t("ip.scenarios.notSampled")
                                 : good
-                                  ? `${sample.elapsedMs} ms · ${sample.status ? `HTTP ${sample.status}` : t("不透明响应")}`
+                                  ? `${sample.elapsedMs} ms · ${sample.status ? `HTTP ${sample.status}` : t("ip.scenarios.opaqueResponse")}`
                                   : sample.status
                                     ? `HTTP ${sample.status}`
-                                    : t("检测受阻")
+                                    : t("ip.scenarios.probeBlocked")
                             }
                           />
                         );
@@ -344,10 +348,10 @@ function AccessRows({
                       <div className="flex flex-wrap items-center gap-2">
                         <span>
                           {rating.scope === "ip"
-                            ? t("该 IP 实测")
+                            ? t("ip.scenarios.verifiedIpEgress")
                             : rating.scope === "different"
-                              ? t("出口不同")
-                              : t("当前网络实测")}
+                              ? t("ip.scenarios.differentEgress")
+                              : t("ip.scenarios.currentNetwork")}
                         </span>
                         <span>{status}</span>
                         {rating.stars !== null && (
@@ -357,7 +361,7 @@ function AccessRows({
                       {rating.scope === "different" && (
                         <p>
                           {t(
-                            "出口与查询 IP 不一致，星级仅描述当前网络访问表现。",
+                            "ip.scenarios.egressDiffersQueriedIpStarsDescribeAccessCurrent",
                           )}
                         </p>
                       )}
@@ -435,13 +439,13 @@ const ScenarioSummaryRow = memo(function ScenarioSummaryRow({
         <div className="ip-scenario-progress">
           <div
             className="ping-dots"
-            aria-label={t("已评 {0}/{1}", [rated, group.targets.length])}
+            aria-label={t("ip.scenarios.rated", [rated, group.targets.length])}
           >
             {group.targets.map((target, index) => (
               <span
                 key={target.url}
                 className={`ping-dot ${states[index] === "_" ? "" : states[index] === "!" ? "dot-fail" : "dot-good"}`}
-                title={`${target.name} · ${states[index] === "_" ? t("检测中…") : states[index] === "!" ? t("证据不足") : `${states[index]}/5`}`}
+                title={`${target.name} · ${states[index] === "_" ? t("common.checking") : states[index] === "!" ? t("ip.scenarios.insufficientEvidence") : `${states[index]}/5`}`}
               />
             ))}
           </div>
@@ -451,8 +455,8 @@ const ScenarioSummaryRow = memo(function ScenarioSummaryRow({
           <span
             className="ip-scenario-partial"
             data-visible={partial}
-            title={partial ? t("部分结果") : undefined}
-            aria-label={partial ? t("部分结果") : undefined}
+            title={partial ? t("ip.scenarios.partialResults") : undefined}
+            aria-label={partial ? t("ip.scenarios.partialResults") : undefined}
             aria-hidden={!partial}
           >
             <Info size={11} aria-hidden="true" />
@@ -465,7 +469,11 @@ const ScenarioSummaryRow = memo(function ScenarioSummaryRow({
             <ScenarioStars stars={average} />
           ) : (
             <Badge variant="secondary">
-              {busy ? <Pending>{t("检测中…")}</Pending> : t("证据不足")}
+              {busy ? (
+                <Pending>{t("common.checking")}</Pending>
+              ) : (
+                t("ip.scenarios.insufficientEvidence")
+              )}
             </Badge>
           )}
         </div>
@@ -511,11 +519,13 @@ export function ScenarioPanel({
           disabled={Boolean(busy) || inbound.busy || access.busy}
           onClick={() => void run(key)}
         >
-          {group?.inbound ? t("检测 HTTPS 入站") : t("开始网络质量测试")}
+          {group?.inbound
+            ? t("ip.scenarios.testInboundHttps")
+            : t("ip.scenarios.startQualityTest")}
         </Button>
         {busy === key && (
           <Button size="sm" variant="ghost" onClick={cancel}>
-            {t("取消")}
+            {t("ip.scenarios.cancel")}
           </Button>
         )}
         <Badge variant={stateTone(state)}>
@@ -527,15 +537,23 @@ export function ScenarioPanel({
         </Badge>
       </div>
       {state === "mismatch" && (
-        <p>{t("观察到的出口与查询 IP 不一致，此结果不能给该 IP 评分。")}</p>
+        <p>
+          {t("ip.scenarios.observedEgressDiffersQueriedIpResultCannotRate")}
+        </p>
       )}
       {state === "unverifiable" && (
-        <p>{t("无法读取目标响应或确认出口归属，不能判为 IP 不可用。")}</p>
+        <p>
+          {t(
+            "ip.scenarios.responseEgressCannotVerifiedDoesEstablishIpUnavailability",
+          )}
+        </p>
       )}
-      {state === "expired" && <p>{t("旧结果只供查看，请重新检测。")}</p>}
+      {state === "expired" && (
+        <p>{t("ip.scenarios.oldResultReferenceRunNewTest")}</p>
+      )}
       {!!quality?.missing.length && (
         <p>
-          {t("缺少有效证据")}：
+          {t("ip.scenarios.missingValidEvidence")}：
           {quality.missing.map((name) => metricLabels[name] ?? name).join("、")}
         </p>
       )}
@@ -543,23 +561,19 @@ export function ScenarioPanel({
       {quality?.stars != null && (
         <>
           <ScenarioStars stars={quality.stars} />
-          <p>
-            {t(
-              "AIM 五档对应 1–5 星，仅描述本次浏览器网络测量，不能证明账号或地区可用。",
-            )}
-          </p>
+          <p>{t("ip.scenarios.fiveAimClassesMap15StarsBrowser")}</p>
         </>
       )}
     </>
   );
   return (
-    <ToolCard title={t("应用场景评分")}>
+    <ToolCard title={t("ip.scenarios.applicationAccessRatings")}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p className="ip-scenario-intro !mb-0">
-          {t("自动检测 {0} 类场景、{1} 个平台，点击场景查看详情。", [
-            scenarioGroups.length,
-            platformCount,
-          ])}
+          {t(
+            "ip.scenarios.automaticallyTestsScenariosAcrossPlatformsSelectScenarioDetails",
+            [scenarioGroups.length, platformCount],
+          )}
         </p>
         <Button
           size="sm"
@@ -567,16 +581,20 @@ export function ScenarioPanel({
           disabled={Boolean(busy)}
           onClick={access.busy ? access.cancel : access.start}
         >
-          {access.busy ? <Pending>{t("停止检测")}</Pending> : t("重新测试")}
+          {access.busy ? (
+            <Pending>{t("common.stopTesting")}</Pending>
+          ) : (
+            t("common.testAgain")
+          )}
         </Button>
       </div>
       <div className="data-table connectivity-table ip-scenario-table">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("应用场景")}</TableHead>
-              <TableHead>{t("检测覆盖")}</TableHead>
-              <TableHead>{t("平均评分")}</TableHead>
+              <TableHead>{t("ip.scenarios.scenario")}</TableHead>
+              <TableHead>{t("ip.scenarios.coverage")}</TableHead>
+              <TableHead>{t("ip.scenarios.averageRating")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -613,30 +631,34 @@ export function ScenarioPanel({
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}
-        title={group?.label ?? t("应用场景评分")}
-        description={t("当前网络访问评分；点击平台查看采样与出口证据。")}
+        title={group?.label ?? t("ip.scenarios.applicationAccessRatings")}
+        description={t(
+          "ip.scenarios.accessRatingsCurrentNetworkSelectPlatformInspectSamples",
+        )}
       >
         {group && average && (
           <div className="ip-scenario-dialog space-y-3 text-xs">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span>{t("平均访问评分")}</span>
+              <span>{t("ip.scenarios.averageAccessRating")}</span>
               {average.average !== null ? (
                 <ScenarioStars stars={average.average} />
               ) : (
-                <Badge variant="secondary">{t("证据不足")}</Badge>
+                <Badge variant="secondary">
+                  {t("ip.scenarios.insufficientEvidence")}
+                </Badge>
               )}
               <p className="w-full text-muted-foreground">
                 {t(
-                  "已评 {0}/{1}，至少 {2} 个平台有效才生成均分；未评分项不计入。",
+                  "ip.scenarios.ratedAtLeastValidPlatformRatingsRequiredUnrated",
                   [average.rated, average.total, average.required],
                 )}
               </p>
               {average.rated < average.total && (
                 <Badge variant="warning">
                   {access.busy ? (
-                    <Pending>{t("检测中…")}</Pending>
+                    <Pending>{t("common.checking")}</Pending>
                   ) : (
-                    t("部分结果")
+                    t("ip.scenarios.partialResults")
                   )}
                 </Badge>
               )}
@@ -651,27 +673,23 @@ export function ScenarioPanel({
             {group.quality && (
               <details>
                 <summary className="cursor-pointer text-xs text-muted-foreground">
-                  {t("完整网络质量检测")}
+                  {t("ip.scenarios.fullNetworkQualityTest")}
                 </summary>
                 <p>
                   {t(
-                    "网站接入评分不代表游戏对战、视频会议或播放质量；完整质量需要带宽、抖动与丢包证据。",
+                    "ip.scenarios.websiteAccessRatingsDoMeasureGameplayCallsPlayback",
                   )}
                 </p>
                 <p>
                   {t(
-                    "测试当前浏览器到 Cloudflare 与配置的 TURN 服务，不代表所有目标平台的线路。",
+                    "ip.scenarios.measuresBrowserCloudflareConfiguredTurnServiceRoutesEvery",
                   )}
                 </p>
-                <p>
-                  {t(
-                    "最多约 70 MB 测量流量，最长 2 分钟；三个性能场景共用一次结果。",
-                  )}
-                </p>
+                <p>{t("ip.scenarios.upAbout70Mb2MinutesThreePerformance")}</p>
                 {!hasTurn && (
                   <p>
                     {t(
-                      "未配置 TURN 丢包检测；可测带宽和延迟，但缺少 UDP 证据时不生成星级。",
+                      "ip.scenarios.turnLossTestingConfiguredBandwidthLatencyMeasuredBut",
                     )}
                   </p>
                 )}
@@ -681,17 +699,15 @@ export function ScenarioPanel({
             {group.inbound && (
               <details>
                 <summary className="cursor-pointer text-xs text-muted-foreground">
-                  {t("查询 IP 入站检测")}
+                  {t("ip.scenarios.inboundTestsForTheQueriedIp")}
                 </summary>
                 <p>
                   {t(
-                    "上方评分仅代表云平台网站访问，不代表查询 IP 可以部署网站。",
+                    "ip.scenarios.ratingAboveDescribesAccessCloudWebsitesHostingCapability",
                   )}
                 </p>
                 <p>
-                  {t(
-                    "远端探针检查此 IP 的 HTTPS 443，不使用浏览器出口代替；证书或 Host 不匹配也可能导致失败。",
-                  )}
+                  {t("ip.scenarios.remoteProbesCheckIpHttps443BrowserEgress")}
                 </p>
                 <div className="my-2 flex flex-wrap items-center gap-2">
                   <Button
@@ -700,19 +716,20 @@ export function ScenarioPanel({
                     disabled={inbound.busy || Boolean(busy) || access.busy}
                     onClick={() => void inbound.start()}
                   >
-                    {t("检测 ICMP 入站")}
+                    {t("ip.scenarios.testInboundIcmp")}
                   </Button>
                   {inbound.busy && (
                     <Button size="sm" variant="ghost" onClick={inbound.cancel}>
-                      {t("取消")}
+                      {t("ip.scenarios.cancel")}
                     </Button>
                   )}
                 </div>
                 {inbound.data && (
                   <p>
-                    {t("ICMP 已返回 {0} 个探针；不回包不代表 HTTPS 不可达。", [
-                      inbound.data.results.length,
-                    ])}
+                    {t(
+                      "ip.scenarios.icmpReturnedProbesReplyDoesEstablishHttpsFailure",
+                      [inbound.data.results.length],
+                    )}
                   </p>
                 )}
                 {inbound.error && (
@@ -723,33 +740,23 @@ export function ScenarioPanel({
             )}
             <p className="text-muted-foreground">
               {t(
-                "仅检测公开端点响应，不透明响应无法读取 HTTP 状态；不代表登录、对话、播放、地区授权或账号安全。",
+                "ip.scenarios.testsPublicEndpointsOpaqueResponsesHideHttpStatus",
               )}
             </p>
           </div>
         )}
       </ResponsiveDialog>
       <details className="mt-3 text-xs text-muted-foreground">
-        <summary className="cursor-pointer">{t("评分依据与检测范围")}</summary>
+        <summary className="cursor-pointer">
+          {t("ip.scenarios.ratingRulesAndTestScope")}
+        </summary>
         <p className="mt-2">
-          {t(
-            "每个平台至少 3 次有效响应；场景至少 3 个平台且覆盖 60% 后取星级均值，保留一位小数。",
-          )}
+          {t("ip.scenarios.eachPlatformNeeds3ValidResponsesScenarioNeeds")}
         </p>
+        <p>{t("ip.scenarios.medianHttpResponseTimes1503006001000")}</p>
+        <p>{t("ip.scenarios.initialSamplesComeFirstFollowedUp8Samples")}</p>
         <p>
-          {t(
-            "按 HTTP 响应耗时中位数评级：≤150 / 300 / 600 / 1000 / >1000 ms 对应 5 / 4 / 3 / 2 / 1 星；这是本站访问速度参考。",
-          )}
-        </p>
-        <p>
-          {t(
-            "先完成基础采样再补齐至最多 8 次，整轮上限 20 秒。覆盖圆点代表各平台，详情圆点代表单次请求。",
-          )}
-        </p>
-        <p>
-          {t(
-            "仅检测公开端点响应，不透明响应无法读取 HTTP 状态；不代表登录、对话、播放、地区授权或账号安全。",
-          )}
+          {t("ip.scenarios.testsPublicEndpointsOpaqueResponsesHideHttpStatus")}
         </p>
       </details>
     </ToolCard>

@@ -198,7 +198,7 @@ export function createWebMcpTools(navigate: (path: string) => void): Tool[] {
     {
       name: "one_ip_lookup_subdomains",
       description:
-        "Look up subdomains of a public domain in certificate transparency records. Results are not a complete DNS inventory.",
+        "Look up subdomains of a public domain using passive DNS data with certificate transparency as a fallback. Sources may limit results; this is not a complete or current DNS inventory.",
       inputSchema: {
         type: "object",
         properties: {

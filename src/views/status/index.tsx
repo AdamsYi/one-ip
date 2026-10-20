@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatedValue } from "@/components/animated-value";
 import { NumberTicker } from "@/components/number-ticker";
@@ -16,39 +15,49 @@ import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { UnderlineHover } from "@/components/underline-hover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { t, locale } from "@/i18n";
+import { localizeApiMessage } from "@/i18n/api-message";
+import { localizeCatalogItem } from "@/lib/localize-catalog";
 import { useQueries } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { getStatus } from "./api";
+import { serviceGroups, serviceGroupLabel } from "./groups";
 import { statusOrder } from "./order";
 import rawservices from "./services.json";
 
-const services = rawservices.map((item) => ({
-  ...item,
-  name: t(item.name),
-  note: item.note ? t(item.note) : item.note,
-}));
+const services = rawservices.map(localizeCatalogItem);
 
 const componentLabels: Record<string, string> = {
-  operational: t("正常运行"),
-  degraded_performance: t("性能下降"),
-  partial_outage: t("部分故障"),
-  major_outage: t("严重故障"),
-  under_maintenance: t("维护中"),
+  operational: t("common.operational"),
+  degraded_performance: t("status.degradedPerformance"),
+  partial_outage: t("status.partialOutage"),
+  major_outage: t("common.majorOutage"),
+  under_maintenance: t("common.underMaintenance"),
 };
 const labels: Record<string, string> = {
-  none: t("正常运行"),
-  minor: t("轻微故障"),
-  major: t("严重故障"),
-  critical: t("重大故障"),
-  maintenance: t("维护中"),
+  none: t("common.operational"),
+  minor: t("common.minorOutage"),
+  major: t("common.majorOutage"),
+  critical: t("common.criticalOutage"),
+  maintenance: t("common.underMaintenance"),
 };
 export default function StatusPage() {
   const mobile = useIsMobile();
   const [params, setParams] = useSearchParams();
-  const [detailId, setDetailId] = useState<string | null>(() => {
-    const id = params.get("service");
-    return services.some((service) => service.id === id) ? id : null;
-  });
+  const requestedService = params.get("service");
+  const detailId = services.some((service) => service.id === requestedService)
+    ? requestedService
+    : null;
+  const setDetailId = (id: string | null) => {
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (id) next.set("service", id);
+        else next.delete("service");
+        return next;
+      },
+      { replace: id === null },
+    );
+  };
   const filter = params.get("group") ?? "全部";
   const queries = useQueries({
     queries: services.map((s) => ({
@@ -66,7 +75,7 @@ export default function StatusPage() {
     .filter((s) => filter === "全部" || s.group === filter);
   const sections = [
     [
-      t("故障 / 维护"),
+      t("status.incidentsMaintenance"),
       rows
         .filter((s) => statusOrder(s.query.data?.status?.indicator) === 0)
         .sort((a, b) => {
@@ -78,11 +87,11 @@ export default function StatusPage() {
         }),
     ],
     [
-      t("运行中"),
+      t("status.operational"),
       rows.filter((s) => s.query.data?.status?.indicator === "none"),
     ],
     [
-      t("待确认"),
+      t("common.pendingConfirmation"),
       rows.filter((s) => statusOrder(s.query.data?.status?.indicator) === 2),
     ],
   ] as const;
@@ -107,13 +116,13 @@ export default function StatusPage() {
   const columns: ColumnDef<(typeof tableRows)[number]>[] = [
     {
       accessorKey: "name",
-      header: t("服务"),
+      header: t("status.service"),
       cell: ({ row }) => (
         <button
           type="button"
           className="service-name text-left text-primary focus-visible:outline-ring"
           onClick={() => setDetailId(row.original.id)}
-          aria-label={t("查看 {0} 详情", [row.original.name])}
+          aria-label={t("common.viewDetails", [row.original.name])}
         >
           <SiteLogo src={row.original.icon} website={row.original.page} />
           <UnderlineHover className="truncate">
@@ -122,7 +131,7 @@ export default function StatusPage() {
           {!!row.original.data?.incidents?.length && (
             <Badge variant="secondary" className="shrink-0">
               {row.original.data.incidents.length}
-              {t("个事件")}
+              {t("status.incidents")}
             </Badge>
           )}
         </button>
@@ -130,14 +139,16 @@ export default function StatusPage() {
     },
     {
       accessorKey: "group",
-      header: t("分类"),
+      header: t("status.category"),
       cell: ({ row }) => (
-        <Badge variant="secondary">{t(row.original.group)}</Badge>
+        <Badge variant="secondary">
+          {serviceGroupLabel(row.original.group)}
+        </Badge>
       ),
     },
     {
       id: "status",
-      header: t("状态"),
+      header: t("common.status"),
       cell: ({ row }) => {
         const service = row.original;
         const indicator = service.data?.status?.indicator;
@@ -145,7 +156,7 @@ export default function StatusPage() {
           <button
             type="button"
             onClick={() => setDetailId(service.id)}
-            aria-label={t("查看 {0} 状态详情", [service.name])}
+            aria-label={t("status.viewStatusDetails", [service.name])}
             className={`service-table-state service-card service-${indicator ?? "unknown"}`}
           >
             <i
@@ -153,11 +164,11 @@ export default function StatusPage() {
             />
             <AnimatedValue value={`${service.loading}-${indicator}`}>
               {service.loading ? (
-                <Pending>{t("查询中...")}</Pending>
+                <Pending>{t("common.lookingUp")}</Pending>
               ) : !service.integrated ? (
-                t("未接入")
+                t("status.notIntegrated")
               ) : (
-                (labels[indicator ?? ""] ?? t("未知"))
+                (labels[indicator ?? ""] ?? t("common.unknown"))
               )}
             </AnimatedValue>
           </button>
@@ -166,7 +177,7 @@ export default function StatusPage() {
     },
     {
       id: "updated",
-      header: t("更新时间"),
+      header: t("status.updatedAt"),
       cell: ({ row }) => (
         <span className="small muted">
           {row.original.data?.fetchedAt
@@ -187,10 +198,10 @@ export default function StatusPage() {
             className="small"
           >
             {row.original.statusSource
-              ? t("第三方 · {0} ↗", [row.original.statusSource])
+              ? t("status.thirdParty", [row.original.statusSource])
               : row.original.officialStatus
-                ? t("官方状态 ↗")
-                : t("平台官网 ↗")}
+                ? t("status.officialStatus")
+                : t("status.platformWebsite")}
           </a>
         </UnderlineHover>
       ),
@@ -200,19 +211,21 @@ export default function StatusPage() {
   return (
     <div className="service-status-page">
       <PageHeading
-        title={t("服务状态")}
-        description={t("各服务运行状态与故障事件，第三方来源单独标注")}
+        title={t("navigation.serviceStatus")}
+        description={t(
+          "status.serviceStatusIncidentsThirdPartySourcesLabeledSeparately",
+        )}
       />
       <div className="toolbar">
         <div className="filter-tabs">
-          {["全部", "AI", "VPS", "云服务", "开发", "社区"].map((group) => (
+          {serviceGroups.map(({ value: group, label }) => (
             <Button
               size="sm"
               variant={group === filter ? "secondary" : "ghost"}
-              key={t(group)}
+              key={group}
               onClick={() => setParams(group === "全部" ? {} : { group })}
             >
-              {t(group)}
+              {label}
             </Button>
           ))}
         </div>
@@ -229,7 +242,11 @@ export default function StatusPage() {
             );
           }}
         >
-          {pending ? <Pending>{t("刷新中…")}</Pending> : t("刷新状态")}
+          {pending ? (
+            <Pending>{t("status.refreshing")}</Pending>
+          ) : (
+            t("status.refreshStatus")
+          )}
         </Button>
       </div>
       <div className="service-summary">
@@ -247,7 +264,7 @@ export default function StatusPage() {
           >
             <div className="service-summary-number">
               <NumberTicker value={items.length} />
-              <span>{t("个服务")}</span>
+              <span>{t("status.services")}</span>
             </div>
           </ToolCard>
         ))}
@@ -272,7 +289,7 @@ export default function StatusPage() {
                             type="button"
                             onClick={() => setDetailId(service.id)}
                             className="block w-full py-3 text-left"
-                            aria-label={t("查看 {0} 详情", [service.name])}
+                            aria-label={t("common.viewDetails", [service.name])}
                           >
                             <span className="flex items-center justify-between gap-2">
                               <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
@@ -288,10 +305,11 @@ export default function StatusPage() {
                                 className={`service-card service-${indicator ?? "unknown"} shrink-0 text-xs`}
                               >
                                 {service.query.isFetching && !service.query.data
-                                  ? t("查询中")
+                                  ? t("common.lookingUpLabel")
                                   : !service.url
-                                    ? t("未接入")
-                                    : (labels[indicator ?? ""] ?? t("待确认"))}
+                                    ? t("status.notIntegrated")
+                                    : (labels[indicator ?? ""] ??
+                                      t("common.pendingConfirmation"))}
                               </span>
                             </span>
                             {incident && (
@@ -317,26 +335,27 @@ export default function StatusPage() {
                 columns={columns}
                 getRowId={(row) => row.id}
                 animateChanges={false}
-                empty={t("暂无服务")}
+                empty={t("status.noServices")}
               />
             </CardContent>
           </Card>
         </div>
       )}
       <p className="small muted">
-        {t("每 2 分钟自动检查。未知或查询失败不等于服务故障。")}
+        {t("status.checksAutomaticallyEvery2MinutesUnknownFailedQueries")}
       </p>
       <ResponsiveDialog
-        title={t("{0} · 服务详情", [detail?.name ?? t("服务")])}
+        title={t("status.namedServiceDetails", [
+          detail?.name ?? t("status.service"),
+        ])}
         description={
           detail?.loading
-            ? t("正在查询服务状态…")
-            : t(
-                detail?.error ??
-                  detail?.note ??
-                  detail?.data?.status?.description ??
-                  t("暂无说明"),
-              )
+            ? t("status.checkingServiceStatus")
+            : (detail?.error ??
+              detail?.note ??
+              (detail?.data?.status?.description
+                ? localizeApiMessage(detail.data.status.description)
+                : t("status.noDescription")))
         }
         open={detailId !== null}
         onOpenChange={(open) => {
@@ -347,23 +366,24 @@ export default function StatusPage() {
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="secondary">
               {!detail.integrated
-                ? t("未接入")
-                : (labels[detail.data?.status?.indicator ?? ""] ?? t("未知"))}
+                ? t("status.notIntegrated")
+                : (labels[detail.data?.status?.indicator ?? ""] ??
+                  t("common.unknown"))}
             </Badge>
-            <span>{t(detail.group)}</span>
+            <span>{serviceGroupLabel(detail.group)}</span>
             {detail.statusSource && (
-              <span>{t("第三方 · {0} ↗", [detail.statusSource])}</span>
+              <span>{t("status.thirdParty", [detail.statusSource])}</span>
             )}
             {detail.data?.checkedAt && (
               <time>
-                {t("来源检测时间：{0}", [
+                {t("status.sourceCheckedAt", [
                   new Date(detail.data.checkedAt).toLocaleString(locale),
                 ])}
               </time>
             )}
             {detail.data?.fetchedAt && (
               <time>
-                {t("更新于")}
+                {t("status.updated")}
                 {new Date(detail.data.fetchedAt).toLocaleString(locale)}
               </time>
             )}
@@ -371,7 +391,9 @@ export default function StatusPage() {
         )}
         {!!detail?.data?.components?.length && (
           <section className="space-y-2">
-            <h3 className="text-sm font-medium">{t("服务组件")}</h3>
+            <h3 className="text-sm font-medium">
+              {t("status.serviceComponents")}
+            </h3>
             <dl className="divide-y divide-border text-sm">
               {detail.data.components.map((component) => (
                 <div
@@ -387,19 +409,19 @@ export default function StatusPage() {
             </dl>
           </section>
         )}
-        <h3 className="text-sm font-medium">{t("当前事件")}</h3>
+        <h3 className="text-sm font-medium">{t("status.currentIncidents")}</h3>
         {!detail?.loading &&
           !detail?.error &&
           detail?.data &&
           Array.isArray(detail.data.incidents) &&
           !detail.data.incidents.length && (
             <p className="text-sm text-muted-foreground">
-              {t("数据源未报告当前事件。")}
+              {t("status.theSourceReportedNoCurrentIncidents")}
             </p>
           )}
         {detail?.data && !detail.data.incidents && (
           <p className="text-sm text-muted-foreground">
-            {t("此数据源仅提供汇总状态，事件详情请查看来源页面。")}
+            {t("status.sourceProvidesAggregateStatusSeeSourcePageIncident")}
           </p>
         )}
         {detail?.data?.incidents?.map((incident) => (
@@ -426,10 +448,10 @@ export default function StatusPage() {
             rel="noreferrer"
           >
             {detail.statusSource
-              ? t("第三方 · {0} ↗", [detail.statusSource])
+              ? t("status.thirdParty", [detail.statusSource])
               : detail.officialStatus
-                ? t("查看官方状态页 ↗")
-                : t("前往平台官网 ↗")}
+                ? t("status.viewOfficialStatusPage")
+                : t("status.visitPlatformWebsite")}
           </a>
         )}
       </ResponsiveDialog>

@@ -33,7 +33,7 @@ export default function Privacy() {
                 ).state,
               ] as [string, string];
             } catch {
-              return [name, t("不支持查询")] as [string, string];
+              return [name, t("browser.queryUnsupported")] as [string, string];
             }
           },
         ),
@@ -42,15 +42,19 @@ export default function Privacy() {
   });
   async function testMedia(kind: "camera" | "microphone") {
     setBusy(true);
-    setMessage(t("等待授权…"));
+    setMessage(t("browser.awaitingPermission"));
     try {
       const stream = await navigator.mediaDevices.getUserMedia(
         kind === "camera" ? { video: true } : { audio: true },
       );
       stream.getTracks().forEach((track) => track.stop());
-      if (alive.current) setMessage(t("已获得授权，媒体流已立即关闭。"));
+      if (alive.current)
+        setMessage(
+          t("browser.permissionGrantedTheMediaStreamWasClosedImmediately"),
+        );
     } catch {
-      if (alive.current) setMessage(t("未获得媒体访问权限或设备不可用。"));
+      if (alive.current)
+        setMessage(t("browser.mediaAccessWasGrantedDeviceUnavailable"));
     } finally {
       if (alive.current) {
         setBusy(false);
@@ -60,12 +64,12 @@ export default function Privacy() {
   }
   function locate() {
     setBusy(true);
-    setMessage(t("等待定位授权…"));
+    setMessage(t("browser.awaitingLocationPermission"));
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (!alive.current) return;
         setMessage(
-          t("纬度 {0}，经度 {1}，精度约 {2} 米。", [
+          t("browser.latitudeLongitudeAccuracyApproximatelyMeters", [
             position.coords.latitude.toFixed(5),
             position.coords.longitude.toFixed(5),
             Math.round(position.coords.accuracy),
@@ -76,7 +80,9 @@ export default function Privacy() {
       },
       () => {
         if (alive.current) {
-          setMessage(t("未获得定位结果，可能未授权或位置服务不可用。"));
+          setMessage(
+            t("browser.locationResultPermissionMayHaveBeenDeniedLocation"),
+          );
           setBusy(false);
           void permissions.refetch();
         }
@@ -86,23 +92,38 @@ export default function Privacy() {
   }
   return (
     <>
-      <ToolCard title={t("权限与能力")}>
+      <ToolCard title={t("browser.permissionsCapabilities")}>
         <Facts
           rows={[
             ...(permissions.data ?? []),
-            [t("安全上下文"), isSecureContext ? t("是") : t("否")],
-            ["WebGPU", "gpu" in navigator ? t("支持 API") : t("不支持")],
-            ["IndexedDB", "indexedDB" in window ? t("支持 API") : t("不支持")],
+            [
+              t("browser.secureContext"),
+              isSecureContext ? t("common.yes") : t("common.no"),
+            ],
+            [
+              "WebGPU",
+              "gpu" in navigator
+                ? t("browser.apiSupported")
+                : t("common.unsupported"),
+            ],
+            [
+              "IndexedDB",
+              "indexedDB" in window
+                ? t("browser.apiSupported")
+                : t("common.unsupported"),
+            ],
             [
               "Service Worker",
-              "serviceWorker" in navigator ? t("支持 API") : t("不支持"),
+              "serviceWorker" in navigator
+                ? t("browser.apiSupported")
+                : t("common.unsupported"),
             ],
-            ["DNT", navigator.doNotTrack ?? t("未设置")],
+            ["DNT", navigator.doNotTrack ?? t("browser.notSet")],
             [
               "GPC",
               String(
                 (navigator as BrowserNavigator).globalPrivacyControl ??
-                  t("未提供"),
+                  t("common.notProvided"),
               ),
             ],
           ]}
@@ -113,32 +134,35 @@ export default function Privacy() {
             disabled={busy || !navigator.geolocation}
             onClick={locate}
           >
-            {t("测试定位")}
+            {t("browser.testLocation")}
           </Button>
           <Button
             variant="outline"
             disabled={busy || !navigator.mediaDevices?.getUserMedia}
             onClick={() => testMedia("camera")}
           >
-            {t("测试摄像头权限")}
+            {t("browser.testCameraPermission")}
           </Button>
           <Button
             variant="outline"
             disabled={busy || !navigator.mediaDevices?.getUserMedia}
             onClick={() => testMedia("microphone")}
           >
-            {t("测试麦克风权限")}
+            {t("browser.testMicrophonePermission")}
           </Button>
         </div>
         <p className="small muted mt-2" role="status">
-          {message || t("点击后才申请权限；媒体测试结束即关闭，不录制内容。")}
+          {message ||
+            t(
+              "browser.permissionsRequestedAfterClickingMediaStreamsCloseAfter",
+            )}
         </p>
       </ToolCard>
       <div className="mt-3">
         <WebRtcPage />
       </div>
       <p className="small muted mt-3">
-        <Link to="/network/dns">{t("查看 DNS 出口 ›")}</Link>
+        <Link to="/network/dns">{t("browser.viewDnsEgress")}</Link>
       </p>
     </>
   );

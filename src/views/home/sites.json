@@ -6,7 +6,8 @@
     "domain": "web.telegram.org",
     "icon": "https://icons.duckduckgo.com/ip3/telegram.org.ico",
     "extra": ["social"],
-    "note": "暂未接入可读取 Telegram 出口 IP 的接口；网页连通性请使用网站连通检测。"
+    "note": "暂未接入可读取 Telegram 出口 IP 的接口；网页连通性请使用网站连通检测。",
+    "noteKey": "home.telegramEgressUnavailable"
   },
   {
     "name": "IP.cn",
@@ -26,28 +27,32 @@
     "name": "网易",
     "type": "domestic",
     "method": "netease",
-    "icon": "https://icons.duckduckgo.com/ip3/163.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/163.com.ico",
+    "nameKey": "sites.netease"
   },
   {
     "name": "字节跳动",
     "type": "domestic",
     "method": "bytedance",
     "url": "https://perfops.byte-test.com/500b-bench.jpg",
-    "icon": "https://icons.duckduckgo.com/ip3/bytedance.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/bytedance.com.ico",
+    "nameKey": "sites.byteDance"
   },
   {
     "name": "Cloudflare中国",
     "type": "domestic",
     "method": "cftrace",
     "domain": "www.cloudflare-cn.com",
-    "icon": "https://icons.duckduckgo.com/ip3/cloudflare.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/cloudflare.com.ico",
+    "nameKey": "sites.cloudflareChina"
   },
   {
     "name": "高通中国",
     "type": "domestic",
     "method": "cftrace",
     "domain": "www.qualcomm.cn",
-    "icon": "https://icons.duckduckgo.com/ip3/qualcomm.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/qualcomm.com.ico",
+    "nameKey": "sites.qualcommChina"
   },
   {
     "name": "discord.com",

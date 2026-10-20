@@ -25,6 +25,7 @@ const LinkPage = lazy(() => import("@/views/link"));
 const BrowserPage = lazy(() => import("@/views/browser"));
 const ChallengesPage = lazy(() => import("@/views/browser/challenges"));
 const PingPage = lazy(() => import("@/views/ping"));
+const SpeedtestPage = lazy(() => import("@/views/network/speedtest"));
 const StatusPage = lazy(() => import("@/views/status"));
 const SubdomainsPage = lazy(() => import("@/views/subdomains"));
 const WhoisPage = lazy(() => import("@/views/whois"));
@@ -57,7 +58,7 @@ export function App() {
         <Route path="docs/api" element={<ApiUsagePage />} />
         <Route path="terms" element={<PolicyPage page="terms" />} />
         <Route path="privacy" element={<PolicyPage page="privacy" />} />
-        <Route path="network" element={<ToolLayout group="network" />}>
+        <Route path="network" element={<ToolLayout />}>
           <Route
             index
             element={<ModuleOverview key="network" group="network" />}
@@ -70,10 +71,11 @@ export function App() {
           <Route path="whois" element={<WhoisPage />} />
           <Route path="connectivity" element={<LinkPage />} />
           <Route path="ping" element={<PingPage />} />
+          <Route path="speedtest" element={<SpeedtestPage />} />
           <Route path="cdn" element={<CdnPage />} />
           <Route path="dns" element={<DnsExitPage />} />
         </Route>
-        <Route path="browser" element={<ToolLayout group="browser" />}>
+        <Route path="browser" element={<ToolLayout />}>
           <Route
             index
             element={<ModuleOverview key="browser" group="browser" />}
@@ -93,7 +95,7 @@ export function App() {
           ))}
           <Route path="challenges" element={<ChallengesPage />} />
         </Route>
-        <Route path="ai" element={<ToolLayout group="ai" />}>
+        <Route path="ai" element={<ToolLayout />}>
           <Route index element={<ModuleOverview key="ai" group="ai" />} />
           <Route path="gpt" element={<GptPage />} />
           <Route path="claude" element={<ClaudePage />} />
@@ -129,9 +131,9 @@ export function App() {
           path="*"
           element={
             <section className="status-line">
-              <h1>{t("404 · 页面不存在")}</h1>
+              <h1>{t("navigation.pageNotFound")}</h1>
               <Button variant="outline" asChild>
-                <Link to="/">{t("返回概览")}</Link>
+                <Link to="/">{t("navigation.backToOverview")}</Link>
               </Button>
             </section>
           }

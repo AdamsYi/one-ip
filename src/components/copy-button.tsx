@@ -4,23 +4,25 @@ import { Check, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 
-export function CopyButton({
-  value,
-  className,
-}: {
+type CopyButtonProps = {
   value: string;
   className?: string;
-}) {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    setCopied(false);
-  }, [value]);
+};
+
+export function CopyButton({ value, className }: CopyButtonProps) {
+  const [copyState, setCopyState] = useState({ value, copied: false });
+  if (copyState.value !== value) setCopyState({ value, copied: false });
+  const copied = copyState.value === value && copyState.copied;
   useEffect(() => {
     if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), 2000);
+    const timer = setTimeout(() => {
+      setCopyState((previous) =>
+        previous === copyState ? { ...previous, copied: false } : previous,
+      );
+    }, 2000);
     return () => clearTimeout(timer);
-  }, [copied]);
-  const label = copied ? t("已复制") : t("复制");
+  }, [copied, copyState]);
+  const label = copied ? t("common.copied") : t("common.copy");
   return (
     <Button
       type="button"
@@ -32,9 +34,13 @@ export function CopyButton({
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(value);
-          setCopied(true);
+          setCopyState((previous) =>
+            previous === copyState ? { value, copied: true } : previous,
+          );
         } catch {
-          toast.error(t("自动复制失败，请长按或选中链接复制。"));
+          toast.error(
+            t("common.couldCopyAutomaticallySelectPressHoldLinkCopy"),
+          );
         }
       }}
     >

@@ -9,6 +9,7 @@ import { gsap } from "gsap";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { categoryStatusClass } from "./category-status";
+import { siteCategories } from "./site-categories";
 
 export default function ExitMap({
   rows,
@@ -48,10 +49,12 @@ export default function ExitMap({
   const bounds = useRef<L.LatLngBounds | null>(null);
   const [tileError, setTileError] = useState(false);
   useEffect(() => {
-    if (!container.current) return;
+    const element = container.current;
+    if (!element) return;
+    const activeMarkers = markers.current;
     let disposed = false;
     let detachLayers = () => {};
-    const instance = L.map(container.current, {
+    const instance = L.map(element, {
       scrollWheelZoom: false,
       minZoom: 1,
     }).setView([25, 20], 2);
@@ -68,13 +71,13 @@ export default function ExitMap({
       );
     });
     const observer = new ResizeObserver(() => instance.invalidateSize());
-    observer.observe(container.current);
+    observer.observe(element);
     return () => {
       disposed = true;
       detachLayers();
       observer.disconnect();
       fitted.current = false;
-      markers.current.clear();
+      activeMarkers.clear();
       instance.remove();
       map.current = null;
     };
@@ -122,7 +125,7 @@ export default function ExitMap({
         button.type = "button";
         button.style.cssText =
           "display:block;text-align:left;padding:6px 0;width:100%";
-        button.textContent = `${site.domain ?? site.name} · ${site.geo?.ip} · ${t("已读取出口")}`;
+        button.textContent = `${site.domain ?? site.name} · ${site.geo?.ip} · ${t("home.egressCollected")}`;
         button.onclick = () => onSelect(site.name);
         content.append(button);
       }
@@ -133,7 +136,7 @@ export default function ExitMap({
         location ||
         `${group.position[0].toFixed(2)}, ${group.position[1].toFixed(2)}`;
       const detail = document.createElement("span");
-      detail.textContent = `${group.sites.length} ${t("个站点")} · ${group.sites[0].domain ?? group.sites[0].name}${group.sites.length > 1 ? " …" : ""}`;
+      detail.textContent = `${group.sites.length} ${t("home.sites")} · ${group.sites[0].domain ?? group.sites[0].name}${group.sites.length > 1 ? " …" : ""}`;
       label.append(title, detail);
       let marker = markers.current.get(key);
       if (!marker) {
@@ -171,7 +174,7 @@ export default function ExitMap({
         .getElement()
         ?.setAttribute(
           "aria-label",
-          `${location} · ${group.sites.length} ${t("个站点")}`,
+          `${location} · ${group.sites.length} ${t("home.sites")}`,
         );
       if (marker.getPopup()) marker.setPopupContent(content);
       else marker.bindPopup(content);
@@ -205,7 +208,7 @@ export default function ExitMap({
     <section className="mb-2 space-y-1.5">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">
-          {t("出口地图")} · {groups.size} {t("个位置")}
+          {t("home.egressMap")} · {groups.size} {t("home.locations")}
         </span>
         <Button
           size="sm"
@@ -219,7 +222,7 @@ export default function ExitMap({
             else map.current?.setView([25, 20], 2);
           }}
         >
-          {t("查看全部出口")}
+          {t("home.showAllExits")}
         </Button>
       </div>
       <div
@@ -228,7 +231,7 @@ export default function ExitMap({
         <div
           ref={container}
           className="exit-map relative z-0 h-[280px] min-w-0 sm:h-[360px]"
-          aria-label={t("出口地图")}
+          aria-label={t("home.egressMap")}
         />
         {!mapOnly && (
           <div className="flex min-h-0 flex-col border-t bg-background lg:border-t-0 lg:border-l">
@@ -239,62 +242,54 @@ export default function ExitMap({
               <div
                 className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 role="group"
-                aria-label={t("站点分类")}
+                aria-label={t("home.siteCategory")}
               >
-                {[
-                  ["all", "全部"],
-                  ["ai", "AI 服务"],
-                  ["crypto", "加密货币"],
-                  ["ecommerce", "跨境电商"],
-                  ["media", "流媒体"],
-                  ["social", "社交社区"],
-                  ["dev", "开发平台"],
-                  ["tools", "实用工具"],
-                  ["static", "静态资源"],
-                  ["speed", "测速服务"],
-                ].map(([value, label]) => (
-                  <Button
-                    key={value}
-                    size="sm"
-                    variant={category === value ? "secondary" : "ghost"}
-                    aria-pressed={category === value}
-                    className={`h-9 shrink-0 px-3 text-sm font-medium ${categoryStatusClass(rows.filter((row) => value === "all" || row.extra?.includes(value)))}`}
-                    onClick={() => setCategory(value)}
-                  >
-                    {t(label)} (
-                    {
-                      rows.filter(
-                        (row) =>
-                          (value === "all" || row.extra?.includes(value)) &&
-                          row.visible &&
-                          !row.pending &&
-                          Boolean(row.geo?.ip),
-                      ).length
-                    }
-                    /
-                    {
-                      rows.filter(
-                        (row) => value === "all" || row.extra?.includes(value),
-                      ).length
-                    }
-                    )
-                  </Button>
-                ))}
+                {siteCategories
+                  .filter(([value]) => value !== "domestic")
+                  .map(([value, label]) => (
+                    <Button
+                      key={value}
+                      size="sm"
+                      variant={category === value ? "secondary" : "ghost"}
+                      aria-pressed={category === value}
+                      className={`h-9 shrink-0 px-3 text-sm font-medium ${categoryStatusClass(rows.filter((row) => value === "all" || row.extra?.includes(value)))}`}
+                      onClick={() => setCategory(value)}
+                    >
+                      {label} (
+                      {
+                        rows.filter(
+                          (row) =>
+                            (value === "all" || row.extra?.includes(value)) &&
+                            row.visible &&
+                            !row.pending &&
+                            Boolean(row.geo?.ip),
+                        ).length
+                      }
+                      /
+                      {
+                        rows.filter(
+                          (row) =>
+                            value === "all" || row.extra?.includes(value),
+                        ).length
+                      }
+                      )
+                    </Button>
+                  ))}
               </div>
             </div>
             <div className="flex max-h-60 flex-wrap content-start gap-1.5 overflow-y-auto p-2.5 lg:max-h-[326px]">
               {shownRows.map((row) => {
                 const status = !row.visible
-                  ? t("等待检测")
+                  ? t("home.waitingToCheck")
                   : row.pending
-                    ? t("检测中…")
+                    ? t("common.checking")
                     : row.reachable === false
-                      ? t("访问受阻")
+                      ? t("home.websiteAccessBlocked")
                       : !row.geo
-                        ? t("出口不可读")
+                        ? t("home.egressUnavailable")
                         : row.geoPending
-                          ? t("查询中…")
-                          : t("已读取出口");
+                          ? t("common.lookingUpEllipsis")
+                          : t("home.egressCollected");
                 const color = !row.visible
                   ? "bg-muted text-muted-foreground"
                   : row.pending || row.geoPending
@@ -340,7 +335,7 @@ export default function ExitMap({
       </div>
       {tileError && (
         <p className="text-xs text-muted-foreground">
-          {t("地图底图加载失败，请检查网络后刷新；出口列表仍可使用。")}
+          {t("home.mapTilesCouldLoadCheckConnectionRefreshExit")}
         </p>
       )}
     </section>

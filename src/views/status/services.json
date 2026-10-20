@@ -8,7 +8,8 @@
     "statusSource": "UptimeRobot",
     "icon": "https://icons.duckduckgo.com/ip3/telegram.org.ico",
     "officialStatus": false,
-    "note": "第三方来源：UptimeRobot。仅监测 telegram.org 网站可用性，不代表 Telegram 全球消息收发状态；数据过期或不可用时显示待确认。"
+    "note": "第三方来源：UptimeRobot。仅监测 telegram.org 网站可用性，不代表 Telegram 全球消息收发状态；数据过期或不可用时显示待确认。",
+    "noteKey": "status.thirdPartySourceUptimerobotMonitorsTelegramOrgWebsite"
   },
   {
     "id": "0",
@@ -90,7 +91,8 @@
     "url": "https://www.cloudflarestatus.com/api/v2/summary.json",
     "page": "https://www.cloudflarestatus.com/services?search=replicate",
     "icon": "https://icons.duckduckgo.com/ip3/replicate.com.ico",
-    "note": "Replicate 已迁入 Cloudflare 官方状态页，仅展示 Replicate 组件及关联事件。"
+    "note": "Replicate 已迁入 Cloudflare 官方状态页，仅展示 Replicate 组件及关联事件。",
+    "noteKey": "status.replicateHasMovedCloudflareStatusPageComponentRelated"
   },
   {
     "id": "12",
@@ -233,7 +235,8 @@
     "page": "https://aistudio.google.com/status",
     "icon": "https://icons.duckduckgo.com/ip3/gemini.google.com.ico",
     "note": "仅涵盖 AI Studio / Gemini API，不代表 Gemini 聊天网站状态。",
-    "officialStatus": true
+    "officialStatus": true,
+    "noteKey": "status.coversAiStudioGeminiApiGeminiChatWebsite"
   },
   {
     "id": "32",
@@ -243,7 +246,8 @@
     "page": "https://status.deepseek.com",
     "icon": "https://icons.duckduckgo.com/ip3/www.deepseek.com.ico",
     "note": "读取 DeepSeek 官方 RSS 中未解决的事件，已恢复事件不计入故障。",
-    "officialStatus": true
+    "officialStatus": true,
+    "noteKey": "status.unresolvedEventsOfficialDeepseekRssFeedResolvedEvents"
   },
   {
     "id": "33",
@@ -253,7 +257,8 @@
     "page": "https://status.x.ai",
     "icon": "https://icons.duckduckgo.com/ip3/grok.com.ico",
     "note": "读取官方 RSS 中未解决的事件；不包含状态页的实时监控指标。",
-    "officialStatus": true
+    "officialStatus": true,
+    "noteKey": "status.unresolvedEventsOfficialRssFeedLiveMonitoringMetrics"
   },
   {
     "id": "34",
@@ -263,7 +268,9 @@
     "page": "https://status.aliyun.com/#/?region=non-regional",
     "icon": "https://icons.duckduckgo.com/ip3/chat.qwen.ai.ico",
     "note": "展示阿里云非区域性「百炼」产品状态，覆盖千问 API；不代表千问聊天网站状态。",
-    "officialStatus": true
+    "officialStatus": true,
+    "nameKey": "sites.qwen",
+    "noteKey": "status.alibabaCloudNonRegionalModelStudioStatusCovers"
   },
   {
     "id": "35",
@@ -273,7 +280,8 @@
     "page": "https://status.moonshot.cn",
     "icon": "https://icons.duckduckgo.com/ip3/www.kimi.com.ico",
     "note": "Moonshot AI 官方状态，涵盖 Kimi 与开放平台 API。",
-    "officialStatus": true
+    "officialStatus": true,
+    "noteKey": "status.officialMoonshotAiStatusCoveringKimiOpenApi"
   },
   {
     "id": "dmit",
@@ -283,7 +291,8 @@
     "page": "https://does.dmit.fail/",
     "icon": "https://icons.duckduckgo.com/ip3/dmit.io.ico",
     "note": "展示官方汇总与机房线路状态；完整事件请查看官方状态页。",
-    "officialStatus": true
+    "officialStatus": true,
+    "noteKey": "status.officialSummaryDatacenterRoutesSeeOfficialPageFull"
   },
   {
     "id": "bandwagonhost",
@@ -293,7 +302,9 @@
     "page": "https://bwhstatus.com/",
     "icon": "https://icons.duckduckgo.com/ip3/bandwagonhost.com.ico",
     "note": "读取官方页面的当前汇总状态；完整事件请查看官方状态页。",
-    "officialStatus": true
+    "officialStatus": true,
+    "nameKey": "sites.bandwagonHost",
+    "noteKey": "status.currentSummaryOfficialPageSeeFullIncidentDetails"
   },
   {
     "id": "aws",
@@ -303,7 +314,8 @@
     "page": "https://health.aws.amazon.com/health/status",
     "icon": "https://icons.duckduckgo.com/ip3/aws.amazon.com.ico",
     "note": "仅涵盖公开服务事件，不代表账户或实例的专属健康状态。",
-    "officialStatus": true
+    "officialStatus": true,
+    "noteKey": "status.publicServiceEventsAccountInstanceSpecificHealthIncluded"
   },
   {
     "id": "aliyun",
@@ -313,7 +325,9 @@
     "page": "https://status.aliyun.com/",
     "icon": "https://icons.duckduckgo.com/ip3/aliyun.com.ico",
     "note": "读取阿里云官方进行中事件，已恢复事件不计入当前故障。",
-    "officialStatus": true
+    "officialStatus": true,
+    "nameKey": "sites.alibabaCloud",
+    "noteKey": "status.currentEventsOfficialAlibabaCloudDashboardResolvedEvents"
   },
   {
     "id": "tencent-cloud",
@@ -323,7 +337,9 @@
     "page": "https://status.tencentcloud.com/",
     "icon": "https://icons.duckduckgo.com/ip3/tencentcloud.com.ico",
     "note": "读取腾讯云官方区域状态与当前公告，隐藏或已恢复公告不计入故障。",
-    "officialStatus": true
+    "officialStatus": true,
+    "nameKey": "sites.tencentCloud",
+    "noteKey": "status.officialTencentCloudRegionalStatusCurrentNoticesHidden"
   },
   {
     "id": "google-cloud",
@@ -333,7 +349,8 @@
     "page": "https://status.cloud.google.com/",
     "icon": "https://icons.duckduckgo.com/ip3/cloud.google.com.ico",
     "note": "仅涵盖公开服务事件，不代表账户或实例的专属健康状态。",
-    "officialStatus": true
+    "officialStatus": true,
+    "noteKey": "status.publicServiceEventsAccountInstanceSpecificHealthIncluded"
   },
   {
     "id": "azure",
@@ -343,7 +360,8 @@
     "page": "https://azure.status.microsoft/en-us/status/",
     "icon": "https://icons.duckduckgo.com/ip3/azure.microsoft.com.ico",
     "note": "读取 Azure 官方 Current Impact；仅涵盖公开的广泛影响事件，不代表账户专属健康状态。",
-    "officialStatus": true
+    "officialStatus": true,
+    "noteKey": "status.azureOfficialCurrentImpactCoversPubliclyReportedWidespread"
   },
   {
     "id": "oracle-cloud",
@@ -353,6 +371,7 @@
     "page": "https://ocistatus.oraclecloud.com/",
     "icon": "https://icons.duckduckgo.com/ip3/oracle.com.ico",
     "note": "展示 OCI 商业区域的官方汇总状态；区域详情请查看官方页面。",
-    "officialStatus": true
+    "officialStatus": true,
+    "noteKey": "status.officialOciCommercialRegionSummarySeeOfficialPage"
   }
 ]

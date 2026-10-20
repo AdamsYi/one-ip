@@ -13,7 +13,7 @@ export function BuildInfo() {
     const date = parseISO(import.meta.env.VITE_BUILD_TIME ?? "");
     const buildTime = isValid(date)
       ? format(date, "yyyy-MM-dd HH:mm:ss xxx")
-      : t("未知");
+      : t("common.unknown");
     const print = (key: string, value: string) =>
       console.log(
         `%c ${key} %c ${value} %c `,

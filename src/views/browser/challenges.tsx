@@ -14,6 +14,7 @@ import {
   type ChallengeProvider as Provider,
 } from "@/hooks/use-challenge-config";
 import { t } from "@/i18n";
+import { localizeApiMessage } from "@/i18n/api-message";
 import { useMutation } from "@tanstack/react-query";
 import { verifyChallenge } from "./api";
 
@@ -49,7 +50,13 @@ function loadWidget(id: Provider["id"], sitekey: string): Promise<WidgetApi> {
       clearTimeout(timer);
       script.remove();
       scripts.delete(key);
-      reject(new Error(t("验证组件加载失败，请检查网络或内容拦截设置。")));
+      reject(
+        new Error(
+          t(
+            "challenges.verificationComponentFailedLoadCheckNetworkContentBlocking",
+          ),
+        ),
+      );
     }
     script.onerror = fail;
     script.onload = () => {
@@ -81,7 +88,7 @@ function Challenge({
   const container = useRef<HTMLDivElement>(null);
   const [round, setRound] = useState(1);
   const [message, setMessage] = useState("");
-  const [status, setStatus] = useState(t("加载中"));
+  const [status, setStatus] = useState(t("common.loadingLabel"));
   const [elapsed, setElapsed] = useState<number>();
   const [busy, setBusy] = useState(true);
   const [interaction, setInteraction] = useState(false);
@@ -113,26 +120,28 @@ function Challenge({
       if (!active) return;
       active = false;
       abort.abort();
-      setStatus(t("校验超时"));
-      setMessage(t("校验未及时完成，请检查网络后重试。"));
+      setStatus(t("challenges.verificationTimedOut"));
+      setMessage(
+        t("challenges.verificationDidCompleteTimeCheckConnectionTryAgain"),
+      );
       finish();
       if (api && widget !== undefined) api.remove?.(widget);
     }, 45000);
-    setStatus(t("加载中"));
+    setStatus(t("common.loadingLabel"));
     setMessage("");
     setElapsed(undefined);
     void loadWidget(provider.id, provider.sitekey)
       .then(async (loaded) => {
         if (!active) return;
         api = loaded;
-        setStatus(t("等待验证"));
+        setStatus(t("challenges.awaitingVerification"));
         const options = {
           sitekey: provider.sitekey,
           action: "browser_check",
           size: "flexible",
           callback: async (token: string) => {
             if (!active) return;
-            setStatus(t("确认结果中"));
+            setStatus(t("challenges.confirmingResult"));
             try {
               const result = await mutateAsync({
                 provider: provider.id,
@@ -140,16 +149,22 @@ function Challenge({
                 signal: abort.signal,
               });
               if (!active) return;
-              setStatus(result.success ? t("验证通过") : t("未通过"));
-              setMessage(t(result.message));
+              setStatus(
+                result.success
+                  ? t("challenges.verified")
+                  : t("challenges.notPassed"),
+              );
+              setMessage(localizeApiMessage(result.message));
               setScore(result.score);
               finish();
             } catch (error) {
               if (active) {
                 finish();
-                setStatus(t("未完成"));
+                setStatus(t("common.incomplete"));
                 setMessage(
-                  error instanceof Error ? error.message : t("验证请求失败"),
+                  error instanceof Error
+                    ? error.message
+                    : t("challenges.verificationRequestFailed"),
                 );
               }
             }
@@ -160,32 +175,34 @@ function Challenge({
           "before-interactive-callback": () => {
             if (active) {
               setInteraction(true);
-              setStatus(t("需要交互"));
+              setStatus(t("challenges.interactionRequired"));
             }
           },
           "after-interactive-callback": () => {
-            if (active) setStatus(t("等待验证"));
+            if (active) setStatus(t("challenges.awaitingVerification"));
           },
           "timeout-callback": () => {
             if (active) {
               finish();
-              setStatus(t("校验超时"));
-              setMessage(t("请重新开始验证。"));
+              setStatus(t("challenges.verificationTimedOut"));
+              setMessage(t("challenges.pleaseRestartVerification"));
             }
           },
           "expired-callback": () => {
             if (active) {
               finish();
-              setStatus(t("已过期"));
-              setMessage(t("请重新开始验证。"));
+              setStatus(t("challenges.expired"));
+              setMessage(t("challenges.pleaseRestartVerification"));
             }
           },
           "error-callback": () => {
             if (active) {
               finish();
-              setStatus(t("未完成"));
+              setStatus(t("common.incomplete"));
               setMessage(
-                t("Turnstile 无法完成验证，请检查网络连接及站点允许的域名。"),
+                t(
+                  "challenges.turnstileCouldCompleteVerificationCheckConnectivitySiteS",
+                ),
               );
             }
           },
@@ -202,7 +219,7 @@ function Challenge({
       .catch((error) => {
         if (active) {
           finish();
-          setStatus(t("加载失败"));
+          setStatus(t("common.loadFailed"));
           setMessage(error.message);
         }
       });
@@ -235,7 +252,7 @@ function Challenge({
             aria-busy={busy}
             onClick={() => setRound((value) => value + 1)}
           >
-            {t("重新校验")}
+            {t("challenges.verifyAgain")}
           </Button>
         </div>
         <div ref={container} className="max-w-full overflow-x-auto" />
@@ -246,7 +263,7 @@ function Challenge({
     <ToolCard title={provider.name}>
       <div className="row-between gap-3">
         <Badge variant="secondary">
-          {provider.configured ? status : t("未配置")}
+          {provider.configured ? status : t("common.notConfigured")}
         </Badge>
         <Button
           disabled={!provider.configured || busy}
@@ -254,23 +271,28 @@ function Challenge({
           className="min-w-24"
           onClick={() => setRound((value) => value + 1)}
         >
-          {busy ? <Pending>{t("校验中…")}</Pending> : t("重新开始")}
+          {busy ? (
+            <Pending>{t("challenges.verifying")}</Pending>
+          ) : (
+            t("challenges.restart")
+          )}
         </Button>
       </div>
       {score !== undefined && (
         <p className="mt-3 text-sm tabular-nums">
-          {t("可信评分")} {score.toFixed(2)} / 1.00 · {t("本站通过阈值")} 0.50
+          {t("challenges.confidenceScore")} {score.toFixed(2)} / 1.00 ·{" "}
+          {t("challenges.sitePassThreshold")} 0.50
         </p>
       )}
       {provider.id !== "recaptcha" && (
         <p className="small muted mt-3">
           {interaction
-            ? t("本次出现交互校验")
+            ? t("challenges.anInteractiveChallengeWasShown")
             : busy
-              ? t("等待交互结果")
-              : status === t("验证通过")
-                ? t("本次无需交互")
-                : t("交互结果未确定")}
+              ? t("challenges.waitingForInteractionResult")
+              : status === t("challenges.verified")
+                ? t("challenges.noInteractionWasRequired")
+                : t("challenges.interactionResultUndetermined")}
         </p>
       )}
       <div
@@ -284,10 +306,13 @@ function Challenge({
       <p className="small muted mt-3" role="status">
         {!provider.configured
           ? provider.reason
-            ? t(provider.reason)
-            : t("当前站点尚未启用此验证。")
-          : message || t("页面已自动加载校验，按提示完成操作。")}
-        {elapsed !== undefined && t(" · 用时 {0} 秒", [elapsed])}
+            ? localizeApiMessage(provider.reason)
+            : t("challenges.verificationEnabledCurrentSite")
+          : message ||
+            t(
+              "challenges.verificationLoadedAutomaticallyFollowAnyPromptsToContinue",
+            )}
+        {elapsed !== undefined && t("challenges.timeSeconds", [elapsed])}
       </p>
     </ToolCard>
   );
@@ -308,7 +333,7 @@ export function HumanVerification({
     <>
       <ErrorNotice error={query.error} />
       {query.isPending ? (
-        <Pending>{t("正在读取验证服务…")}</Pending>
+        <Pending>{t("challenges.loadingVerificationService")}</Pending>
       ) : (
         <div className={compact ? "" : "grid gap-3 lg:grid-cols-2"}>
           {providers.map((provider) => (
@@ -325,27 +350,31 @@ export function HumanVerification({
         !query.data?.some((provider) => provider.configured) && (
           <p className="text-sm text-muted-foreground">
             {t(
-              "当前环境没有可用的验证配置，请检查正式 Worker 的站点 Key、Secret 和域名白名单。",
+              "challenges.verificationConfigurationAvailableEnvironmentCheckProductionWorkerS",
             )}
           </p>
         )}
       {query.isError && (
         <Button variant="outline" onClick={() => query.refetch()}>
-          {t("重试")}
+          {t("common.retry")}
         </Button>
       )}
       {!compact && !!query.data?.some((provider) => provider.configured) && (
         <div className="mt-3">
-          <ToolCard title={t("结果怎么看？")}>
+          <ToolCard title={t("challenges.howToInterpretTheResult")}>
             <p className="small muted">
               {t(
-                "通过仅表示本站本次验证成功，不代表其他网站也会通过。Turnstile 体验不等同于 Cloudflare 整站防护挑战。",
+                "challenges.passingMeansAttemptSiteSucceededDoesGuaranteePassing",
               )}
             </p>
             <p className="small muted mt-2">
-              {t("FingerprintJS 用于计算浏览器标识，不提供验证码通过结论。")}
+              {t(
+                "challenges.fingerprintjsCalculatesBrowserIdentifierDoesDetermineCaptchaSuccess",
+              )}
               <UnderlineHover asChild>
-                <Link to="/browser/fingerprint">{t("查看指纹检测 ›")}</Link>
+                <Link to="/browser/fingerprint">
+                  {t("challenges.viewFingerprintCheck")}
+                </Link>
               </UnderlineHover>
             </p>
           </ToolCard>
@@ -358,7 +387,7 @@ export function HumanVerification({
 export default function ChallengesPage() {
   return (
     <>
-      <PageHeading title={t("人机校验")} description="" />
+      <PageHeading title={t("common.humanVerification")} description="" />
       <HumanVerification />
     </>
   );

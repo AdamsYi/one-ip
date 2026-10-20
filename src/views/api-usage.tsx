@@ -34,15 +34,13 @@ export default function ApiUsagePage() {
   return (
     <article className="api-usage mx-auto max-w-4xl space-y-6 py-4 sm:py-8">
       <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-        {t("我的 IP 信息 API")}
+        {t("apiUsage.tsx.myIpInformationApi")}
       </h1>
       <p className="leading-7 text-muted-foreground">
-        {t(
-          "One IP 提供公开 API，可查询请求出口的 IP、位置信息、ASN、信誉分和风险标记，无需 API Key。",
-        )}
+        {t("apiUsage.tsx.oneIpProvidesPublicApiRequestEgressIp")}
       </p>
       <p className="break-words leading-7">
-        {t("接口地址：")}{" "}
+        {t("apiUsage.tsx.endpoint")}{" "}
         <a
           className="text-primary underline underline-offset-4"
           href={endpoint}
@@ -59,23 +57,21 @@ export default function ApiUsagePage() {
         target="_blank"
         rel="noopener noreferrer"
       >
-        {t("完整使用文档")} ↗
+        {t("navigation.fullGuide")} ↗
       </a>
       <p className="text-sm leading-6 text-muted-foreground">
-        {t(
-          "添加 ?ip=1.1.1.1 可查询指定公网 IPv4 / IPv6；添加 ?format=text 返回终端文本。",
-        )}
+        {t("apiUsage.tsx.addIp1111QueryPublic")}
       </p>
       <section className="space-y-4 pt-6">
-        <h2 className="text-2xl font-semibold">{t("示例输出")}</h2>
+        <h2 className="text-2xl font-semibold">
+          {t("apiUsage.tsx.exampleResponse")}
+        </h2>
         <p className="text-sm text-muted-foreground">
-          {t("以下为示意数据，并非实时查询结果。")}
+          {t("apiUsage.tsx.illustrativeDataNotALiveQueryResult")}
         </p>
         <ApiCodeBlock code={example} language="json" />
         <p className="text-sm leading-6 text-muted-foreground">
-          {t(
-            "信誉分越高越好；未知字段为 null。接口有频率限制，收到 429 后请稍后重试。",
-          )}
+          {t("apiUsage.tsx.higherReputationScoresBetterUnknownFieldsNullApi")}
         </p>
       </section>
     </article>

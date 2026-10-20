@@ -68,7 +68,7 @@ export function AiNetworkCheck({
     <Card className="ai-network-check">
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
-          <CardTitle>{t("网络连通性")}</CardTitle>
+          <CardTitle>{t("common.networkConnectivity")}</CardTitle>
           <button
             type="button"
             className="shrink-0 text-xs font-normal text-primary enabled:hover:underline underline-offset-4"
@@ -85,16 +85,20 @@ export function AiNetworkCheck({
                   ]),
                 );
                 if (next.data?.every((result) => result.median != null))
-                  toast.success(t("网络检测完成"));
-                else toast.warning(t("检测完成，部分站点未获取到响应"));
+                  toast.success(t("ai.networkCheckComplete"));
+                else toast.warning(t("ai.checkCompleteSomeSitesDidNotRespond"));
               } catch {
-                toast.error(t("网络检测失败，请重试"));
+                toast.error(t("ai.networkCheckFailedPleaseRetry"));
               } finally {
                 setRefreshing(false);
               }
             }}
           >
-            {busy ? <Pending>{t("检测中…")}</Pending> : t("重新检测")}
+            {busy ? (
+              <Pending>{t("common.checking")}</Pending>
+            ) : (
+              t("common.runAgain")
+            )}
           </button>
         </div>
       </CardHeader>
@@ -103,9 +107,11 @@ export function AiNetworkCheck({
           <Table className="ai-connectivity-table">
             <TableHeader>
               <TableRow>
-                <TableHead>{t("域名")}</TableHead>
-                <TableHead>{t("出口")} IP</TableHead>
-                <TableHead className="text-right">{t("延迟")}</TableHead>
+                <TableHead>{t("ai.domain")}</TableHead>
+                <TableHead>{t("ai.egress")} IP</TableHead>
+                <TableHead className="text-right">
+                  {t("common.latency")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -118,20 +124,24 @@ export function AiNetworkCheck({
                     </span>
                   </TableCell>
                   <TableCell className="ai-connectivity-exit text-muted-foreground">
-                    <span className="sm:hidden">{t("出口 IP：")} </span>
+                    <span className="sm:hidden">{t("common.egressIp")} </span>
                     {exit.isFetching ? (
-                      <Pending>{t("检测中…")}</Pending>
+                      <Pending>{t("common.checking")}</Pending>
                     ) : exit.data?.ip ? (
                       <IpText ip={exit.data.ip} />
                     ) : (
-                      <span title={t("未获取到出口，可能受跨域或连接限制。")}>
-                        {t("暂不可用")}
+                      <span
+                        title={t(
+                          "ai.egressObtainedPossiblyDueCrossOriginConnectionRestrictions",
+                        )}
+                      >
+                        {t("common.unavailable")}
                       </span>
                     )}
                   </TableCell>
                   <TableCell className="ai-connectivity-latency text-right">
                     {query.isFetching ? (
-                      <Pending>{t("检测中…")}</Pending>
+                      <Pending>{t("common.checking")}</Pending>
                     ) : result?.median != null ? (
                       <span title={result.description}>
                         <LatencyBadge result={result} running={false} />
@@ -142,8 +152,8 @@ export function AiNetworkCheck({
                         title={result?.description}
                       >
                         {result?.status === "restricted"
-                          ? t("检测受限")
-                          : t("未确认")}
+                          ? t("common.checkRestricted")
+                          : t("ai.unconfirmed")}
                       </span>
                     )}
                   </TableCell>
@@ -153,13 +163,11 @@ export function AiNetworkCheck({
           </Table>
         </div>
         <p className="small muted mt-2">
-          {t(
-            "检测的是站点资源响应，不等于登录或对话可用；跨站限制和超时不会判为“未连通”。",
-          )}
+          {t("ai.testsSiteResourceResponsesLoginChatAvailabilityCross")}
         </p>
         {query.error && (
           <p className="small text-destructive">
-            {t("网络检测失败，请重试。")}
+            {t("ai.networkCheckFailedPleaseRetryLabel")}
           </p>
         )}
         {children}

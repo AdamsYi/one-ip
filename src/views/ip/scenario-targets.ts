@@ -1,4 +1,5 @@
 import { t } from "@/i18n";
+import { localizeCatalogItem } from "@/lib/localize-catalog";
 import catalog from "../link/targets.json" with { type: "json" };
 
 export type ScenarioTarget = {
@@ -18,12 +19,12 @@ export type ScenarioGroup = {
   inbound?: boolean;
 };
 
-function fromCatalog(name: string, label = name): ScenarioTarget {
+function fromCatalog(name: string, label?: string): ScenarioTarget {
   const target = catalog.find((item) => item.name === name);
   if (!target) throw new Error(`Missing connectivity target: ${name}`);
   return {
     id: name,
-    name: t(label),
+    name: label ?? localizeCatalogItem(target).name,
     url: target.url,
     website: `https://${("host" in target && target.host) || target.icon?.match(/\/ip3\/([^/]+)\.ico$/)?.[1] || new URL(target.url).hostname}`,
     icon: target.icon,
@@ -35,13 +36,13 @@ function site(
   website: string,
   path = "/favicon.ico",
 ): ScenarioTarget {
-  return { id, name: t(name), website, url: new URL(path, website).href };
+  return { id, name, website, url: new URL(path, website).href };
 }
 
 export const scenarioGroups: ScenarioGroup[] = [
   {
     id: "ai",
-    label: t("AI 应用"),
+    label: t("ip.scenarios.aiApps"),
     targets: [
       {
         ...site("claude", "Claude", "https://claude.ai", "/cdn-cgi/trace"),
@@ -59,7 +60,7 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "commerce",
-    label: t("跨境电商"),
+    label: t("categories.ecommerce"),
     targets: [
       fromCatalog("Amazon"),
       fromCatalog("shopify.com", "Shopify"),
@@ -71,7 +72,7 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "social",
-    label: t("社交与短视频"),
+    label: t("ip.scenarios.socialShortVideo"),
     targets: [
       fromCatalog("TikTok"),
       site(
@@ -90,7 +91,7 @@ export const scenarioGroups: ScenarioGroup[] = [
       fromCatalog("Reddit"),
       site(
         "xiaohongshu",
-        "小红书",
+        t("sites.xiaohongshu"),
         "https://www.xiaohongshu.com",
         "https://fe-video-qc.xhscdn.com/fe-platform/ed8fe781ce9e16c1bfac2cd962f0721edabe2e49.ico",
       ),
@@ -98,7 +99,7 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "crypto",
-    label: t("加密货币"),
+    label: t("categories.crypto"),
     targets: [
       fromCatalog("coinbase.com", "Coinbase"),
       fromCatalog("binance.com", "Binance"),
@@ -109,7 +110,7 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "streaming",
-    label: t("流媒体影音"),
+    label: t("ip.scenarios.streamingMedia"),
     quality: "streaming",
     targets: [
       fromCatalog("YouTube"),
@@ -121,7 +122,7 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "gaming",
-    label: t("游戏平台"),
+    label: t("ip.scenarios.gamingPlatforms"),
     quality: "gaming",
     targets: [
       fromCatalog("Steam"),
@@ -138,7 +139,7 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "remote",
-    label: t("办公协作"),
+    label: t("ip.scenarios.workCollaboration"),
     quality: "rtc",
     targets: [
       fromCatalog("Zoom"),
@@ -155,7 +156,7 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "api",
-    label: t("开发与软件源"),
+    label: t("ip.scenarios.developmentPackages"),
     targets: [
       site("github", "GitHub", "https://github.com"),
       fromCatalog("npm"),
@@ -167,7 +168,7 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "hosting",
-    label: t("云服务与托管"),
+    label: t("ip.scenarios.cloudHosting"),
     inbound: true,
     targets: [
       site("cloudflare", "Cloudflare", "https://www.cloudflare.com"),
@@ -179,7 +180,7 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "search",
-    label: t("搜索与资讯"),
+    label: t("ip.scenarios.searchInformation"),
     targets: [
       fromCatalog("Google"),
       fromCatalog("Bing"),
@@ -190,19 +191,19 @@ export const scenarioGroups: ScenarioGroup[] = [
   },
   {
     id: "domestic",
-    label: t("国内常用"),
+    label: t("ip.scenarios.everydayChina"),
     targets: [
       fromCatalog("淘宝"),
       fromCatalog("京东"),
       fromCatalog("微信"),
       fromCatalog("新浪微博"),
       fromCatalog("网易"),
-      site("douyin", "抖音", "https://www.douyin.com"),
+      site("douyin", t("sites.douyin"), "https://www.douyin.com"),
     ],
   },
   {
     id: "communication",
-    label: t("邮箱与通信"),
+    label: t("ip.scenarios.emailMessaging"),
     targets: [
       site("telegram", "Telegram", "https://web.telegram.org", "/favicon.ico"),
       fromCatalog("LINE"),

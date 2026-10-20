@@ -17,11 +17,11 @@ export class RouteErrorBoundary extends Component<
     if (!this.state.failed) return this.props.children;
     return (
       <Alert variant="destructive">
-        <AlertTitle>{t("加载失败")}</AlertTitle>
+        <AlertTitle>{t("common.loadFailed")}</AlertTitle>
         <AlertDescription>
-          <p>{t("页面暂时无法显示，请刷新页面重试。")}</p>
+          <p>{t("navigation.pageCouldDisplayedRefreshPageTryAgain")}</p>
           <Button variant="outline" onClick={() => window.location.reload()}>
-            {t("刷新页面")}
+            {t("common.refreshPage")}
           </Button>
         </AlertDescription>
       </Alert>

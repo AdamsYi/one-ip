@@ -6,23 +6,24 @@ import { SiteLogo } from "@/components/site-logo";
 import { ActionButton, DataTable } from "@/components/toolkit";
 import { Card, CardContent } from "@/components/ui/card";
 import { t } from "@/i18n";
+import { localizeCatalogItem } from "@/lib/localize-catalog";
 import { SplitResults } from "@/views/home/split-results";
 import { skipToken, useQueries, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { useAtom } from "jotai";
 import { testConnectivity, type ProbeResult } from "./api";
 import { connectivityRoundAtom } from "./store";
 import rawtargets from "./targets.json";
 
-const targets = rawtargets.map((item) => ({ ...item, name: t(item.name) }));
+const targets = rawtargets.map(localizeCatalogItem);
 
 const groups = [
-  ["cn", t("中国")],
-  ["jp", t("日本")],
-  ["us", t("美国")],
-  ["gl", t("全球")],
-  ["crypto", t("加密货币")],
-  ["ecommerce", t("跨境电商")],
+  ["cn", t("common.china")],
+  ["jp", t("common.japan")],
+  ["us", t("common.unitedStates")],
+  ["gl", t("link.global")],
+  ["crypto", t("categories.crypto")],
+  ["ecommerce", t("categories.ecommerce")],
 ];
 type ConnectivityRow = (typeof targets)[number] & {
   result?: ProbeResult;
@@ -59,16 +60,16 @@ function ObservedSite({ row }: { row: ConnectivityRow }) {
 const columns: ColumnDef<ConnectivityRow>[] = [
   {
     accessorKey: "name",
-    header: t("网站"),
+    header: t("common.website"),
     cell: ({ row }) => <ObservedSite row={row.original} />,
   },
   {
     id: "samples",
-    header: t("测试记录"),
+    header: t("common.testHistory"),
     cell: ({ row }) => (
       <div
         className="ping-dots"
-        aria-label={t("{0}/8 次测试", [
+        aria-label={t("link.8Tests", [
           row.original.result?.samples.length ?? 0,
         ])}
       >
@@ -79,9 +80,9 @@ const columns: ColumnDef<ConnectivityRow>[] = [
               key={index}
               title={
                 sample == null
-                  ? t("等待测试")
+                  ? t("link.waitingToTest")
                   : sample < 0
-                    ? t("连接失败")
+                    ? t("link.connectionFailed")
                     : `${sample}ms`
               }
               className={`ping-dot ${sample == null ? "" : sample < 0 ? "dot-fail" : sample < 100 ? "dot-good" : sample < 400 ? "dot-warn" : "dot-slow"}`}
@@ -93,7 +94,7 @@ const columns: ColumnDef<ConnectivityRow>[] = [
   },
   {
     id: "latency",
-    header: t("延迟"),
+    header: t("common.latency"),
     cell: ({ row }) =>
       !row.original.started ? (
         "—"
@@ -121,14 +122,17 @@ function ConnectivityGroup({
   const client = useQueryClient();
   const visible = useRef(new Set<string>());
   const [started, setStarted] = useState<Set<string>>(() => new Set());
-  const observe = useCallback((name: string, inView: boolean) => {
-    if (inView) {
-      visible.current.add(name);
-      setStarted((previous) =>
-        previous.has(name) ? previous : new Set(previous).add(name),
-      );
-    } else visible.current.delete(name);
-  }, []);
+  const observe = useCallback(
+    (name: string, inView: boolean) => {
+      if (inView) {
+        visible.current.add(name);
+        setStarted((previous) =>
+          previous.has(name) ? previous : new Set(previous).add(name),
+        );
+      } else visible.current.delete(name);
+    },
+    [setStarted],
+  );
   const progress = useQueries({
     queries: groupTargets.map((target) => ({
       queryKey: ["link-row-progress", target.name, round],
@@ -178,7 +182,7 @@ function ConnectivityGroup({
         </h2>
         <div className="connectivity-actions">
           <span className="small muted">
-            {t("可读取响应")}{" "}
+            {t("link.readableResponse")}{" "}
             <NumberTicker
               value={
                 tableRows.filter(
@@ -200,10 +204,10 @@ function ConnectivityGroup({
               }));
             }}
             aria-label={
-              busy ? t("{0}测试中...", [label]) : t("重新测试{0}", [label])
+              busy ? t("link.testing", [label]) : t("link.testAgain", [label])
             }
           >
-            {busy ? t("测试中...") : t("重新测试")}
+            {busy ? t("common.testing") : t("common.testAgain")}
           </ActionButton>
         </div>
       </div>
@@ -220,13 +224,13 @@ function ConnectivityGroup({
           {showLegend && (
             <div className="legend connectivity-legend mt-3 border-t pt-3 text-xs">
               <i className="dot-good" />
-              {t("优")}
+              {t("link.excellent")}
               <i className="dot-warn" />
-              {t("良")}
+              {t("link.good")}
               <i className="dot-slow" />
-              {t("慢")}
+              {t("link.slow")}
               <i className="dot-fail" />
-              {t("连接失败")}
+              {t("link.connectionFailed")}
             </div>
           )}
         </CardContent>
@@ -237,14 +241,14 @@ function ConnectivityGroup({
 
 export default function LinkPage() {
   useEffect(() => {
-    document.title = t("网站连通与出口 - IP 网络工具");
+    document.title = t("link.connectivityEgressIpTools");
   }, []);
   return (
     <>
-      <h1 className="sr-only">{t("网站连通与分流出口")}</h1>
+      <h1 className="sr-only">{t("link.connectivityAndRoutedEgress")}</h1>
       <SplitResults />
       <div className="section-heading connectivity-page-heading">
-        <h2>{t("网站连通性")}</h2>
+        <h2>{t("link.websiteConnectivity")}</h2>
       </div>
       {groups.map(([cc, label], index) => (
         <ConnectivityGroup
@@ -255,9 +259,7 @@ export default function LinkPage() {
         />
       ))}
       <p className="principle">
-        {t(
-          "浏览器 HTTP 请求耗时，取 8 轮成功请求的中位数，非 ICMP Ping。请求被拦截或超时会显示连接失败。",
-        )}
+        {t("link.browserHttpRequestTimingMedianSuccessfulRequestsAcross")}
       </p>
     </>
   );

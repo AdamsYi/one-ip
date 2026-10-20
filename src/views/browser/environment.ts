@@ -25,27 +25,38 @@ export function environmentRows(): [string, string | number][] {
   const nav = navigator as BrowserNavigator;
   return [
     ["User-Agent", nav.userAgent],
-    [t("平台"), nav.platform || t("未提供")],
-    [t("语言"), nav.languages.join(" · ")],
-    [t("时区"), Intl.DateTimeFormat().resolvedOptions().timeZone],
-    [t("屏幕"), `${screen.width} × ${screen.height}`],
-    [t("可用屏幕"), `${screen.availWidth} × ${screen.availHeight}`],
-    [t("视口"), `${innerWidth} × ${innerHeight}`],
-    [t("像素比"), devicePixelRatio],
-    [t("色深"), screen.colorDepth],
-    [t("逻辑处理器"), nav.hardwareConcurrency ?? t("未提供")],
+    [t("browser.platform"), nav.platform || t("common.notProvided")],
+    [t("browser.language"), nav.languages.join(" · ")],
+    [t("common.timezone"), Intl.DateTimeFormat().resolvedOptions().timeZone],
+    [t("browser.screen"), `${screen.width} × ${screen.height}`],
     [
-      t("内存提示"),
-      nav.deviceMemory ? t("{0} GB（近似）", [nav.deviceMemory]) : t("未提供"),
+      t("browser.availableScreen"),
+      `${screen.availWidth} × ${screen.availHeight}`,
     ],
-    [t("触控点"), nav.maxTouchPoints],
-    ["Cookie", nav.cookieEnabled ? t("已启用") : t("未启用")],
-    [t("Client Hints 平台"), nav.userAgentData?.platform ?? t("不支持")],
+    [t("browser.viewport"), `${innerWidth} × ${innerHeight}`],
+    [t("browser.pixelRatio"), devicePixelRatio],
+    [t("common.colorDepth"), screen.colorDepth],
     [
-      t("Client Hints 品牌"),
+      t("common.logicalProcessors"),
+      nav.hardwareConcurrency ?? t("common.notProvided"),
+    ],
+    [
+      t("common.memoryHint"),
+      nav.deviceMemory
+        ? t("browser.gbApprox", [nav.deviceMemory])
+        : t("common.notProvided"),
+    ],
+    [t("browser.touchPoints"), nav.maxTouchPoints],
+    ["Cookie", nav.cookieEnabled ? t("common.enabled") : t("common.disabled")],
+    [
+      t("browser.clientHintsPlatform"),
+      nav.userAgentData?.platform ?? t("common.unsupported"),
+    ],
+    [
+      t("browser.clientHintsBrands"),
       nav.userAgentData?.brands
         .map((item) => `${item.brand} ${item.version}`)
-        .join(" · ") ?? t("不支持"),
+        .join(" · ") ?? t("common.unsupported"),
     ],
   ];
 }

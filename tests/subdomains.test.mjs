@@ -58,17 +58,17 @@ test("certificate names split SAN lines, deduplicate, retain wildcards and exclu
       (e) => e.status === 502,
     );
 });
-test("crt.sh integration uses a fixed upstream and preserves errors", async () => {
+test("passive DNS integration uses a fixed upstream and preserves source failures", async () => {
   const previous = globalThis.fetch;
   let calls = 0;
   try {
     globalThis.fetch = async (url) => {
       calls++;
       const target = new URL(url);
-      assert.equal(target.origin, "https://crt.sh");
-      assert.equal(target.searchParams.get("q"), "%.example.com");
-      assert.equal(target.searchParams.get("output"), "json");
-      return Response.json([{ name_value: "www.example.com" }]);
+      assert.equal(target.origin, "https://api.hackertarget.com");
+      assert.equal(target.pathname, "/hostsearch/");
+      assert.equal(target.searchParams.get("q"), "example.com");
+      return new Response("www.example.com,1.1.1.1\n");
     };
     const response = await worker.fetch(
       new Request("https://tools.example/api/subdomains/example.com"),

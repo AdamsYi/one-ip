@@ -11,21 +11,9 @@ import { t } from "@/i18n";
 import type { Geo } from "@/lib/types";
 import type { Site } from "./api";
 import { categoryStatusClass, matchesSiteCategory } from "./category-status";
+import { siteCategories } from "./site-categories";
 
 const ExitMap = lazy(() => import("./exit-map"));
-const categories = [
-  ["all", "全部"],
-  ["ai", "AI 服务"],
-  ["crypto", "加密货币"],
-  ["ecommerce", "跨境电商"],
-  ["media", "流媒体"],
-  ["social", "社交社区"],
-  ["dev", "开发平台"],
-  ["tools", "实用工具"],
-  ["domestic", "国内"],
-  ["static", "静态资源"],
-  ["speed", "测速服务"],
-];
 type Row = Site & {
   geo?: Geo;
   visible: boolean;
@@ -90,10 +78,10 @@ export function ExitGroups({
         <CardContent className="flex min-w-0 items-center gap-2 p-2">
           <div
             role="group"
-            aria-label={t("站点分类")}
+            aria-label={t("home.siteCategory")}
             className="flex min-w-0 flex-1 gap-0.5 overflow-x-auto whitespace-nowrap [scrollbar-width:none]"
           >
-            {categories.map(([value, label]) => {
+            {siteCategories.map(([value, label]) => {
               const items = rows.filter(
                 (row) =>
                   value === "all" ||
@@ -113,7 +101,7 @@ export function ExitGroups({
                     setSelected(null);
                   }}
                 >
-                  {t(label)} (
+                  {label} (
                   {
                     items.filter(
                       (row) => row.visible && !row.pending && row.geo,
@@ -132,7 +120,7 @@ export function ExitGroups({
             <Suspense
               fallback={
                 <div className="h-[402px]">
-                  <Pending>{t("加载地图…")}</Pending>
+                  <Pending>{t("home.loadingMap")}</Pending>
                 </div>
               }
             >
@@ -186,10 +174,10 @@ export function ExitGroups({
                             >
                               {t(
                                 key === "unreachable"
-                                  ? "访问受阻"
+                                  ? "home.websiteAccessBlocked"
                                   : key === "egress-unreadable"
-                                    ? "出口不可读"
-                                    : "检测中…",
+                                    ? "home.egressUnavailable"
+                                    : "common.checking",
                               )}
                             </span>
                           ) : (
@@ -205,7 +193,7 @@ export function ExitGroups({
                             selectGroup(key);
                           }}
                         >
-                          {items.length} {t("个站点")} ›
+                          {items.length} {t("home.sites")} ›
                         </Button>
                       </div>
                       {!special && (
@@ -224,7 +212,8 @@ export function ExitGroups({
                                     : undefined,
                                 ]
                                   .filter(Boolean)
-                                  .join(" · ") || t("归属信息暂不可用")
+                                  .join(" · ") ||
+                                t("common.locationDetailsAreUnavailable")
                               }
                             />
                           </div>
@@ -242,15 +231,17 @@ export function ExitGroups({
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}
-        title={t("出口站点")}
+        title={t("home.egressSite")}
         description=""
       >
         {selected === "unreachable" && (
-          <p className="mb-2 text-sm text-destructive">{t("网站访问受阻")}</p>
+          <p className="mb-2 text-sm text-destructive">
+            {t("home.websiteAccessBlockedLabel")}
+          </p>
         )}
         {selected === "egress-unreadable" && (
           <p className="mb-2 text-sm text-amber-700 dark:text-amber-300">
-            {t("网站可访问，但未能读取出口 IP")}
+            {t("home.websiteReachableButEgressIpWasNotReadable")}
           </p>
         )}
         {selected &&

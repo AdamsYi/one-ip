@@ -1,4 +1,5 @@
 import { t } from "@/i18n";
+import { localizeCatalogItem } from "@/lib/localize-catalog";
 import { endpoint, probe, request, trace } from "@/lib/network";
 import type { Geo } from "@/lib/types";
 
@@ -18,7 +19,7 @@ export async function getGeo(
       options(),
     );
     if (!data.ip || (!data.country && !data.isp))
-      throw new Error(t("归属信息不完整"));
+      throw new Error(t("home.incompleteLocationInformation"));
     return { ...data, ip, source: "ip.sb" };
   } catch {
     signal?.throwIfAborted();
@@ -33,7 +34,8 @@ export async function getGeo(
       longitude?: number;
       timezone?: { id?: string };
     }>(`https://ipwho.is/${encodeURIComponent(ip)}`, options());
-    if (!data.success) throw new Error(t("归属信息暂不可用，请稍后重试"));
+    if (!data.success)
+      throw new Error(t("home.locationDetailsAreUnavailablePleaseRetryLater"));
     return {
       ip,
       country: data.country,
@@ -88,10 +90,12 @@ export async function getDomesticIp(signal?: AbortSignal): Promise<Geo> {
       if (signal?.aborted) throw error;
     }
   }
-  throw new Error(t("国内出口未知：目标站点可能限制跨域读取"));
+  throw new Error(t("home.chinaEgressUnknownTargetSiteMayRestrictCross"));
 }
 export interface Site {
+  nameKey?: string;
   note?: string;
+  noteKey?: string;
   extra?: string[];
   name: string;
   type: string;
@@ -137,7 +141,9 @@ export async function detectSite(
   signal?: AbortSignal,
 ): Promise<Geo> {
   if (site.method === "unsupported")
-    throw new Error(t(site.note ?? "未获取到可读取的出口 IP"));
+    throw new Error(
+      localizeCatalogItem(site).note ?? t("home.noReadableEgressIpObtained"),
+    );
   signal = signal
     ? AbortSignal.any([signal, AbortSignal.timeout(3000)])
     : AbortSignal.timeout(3000);
@@ -168,7 +174,7 @@ export async function detectSite(
       )?.[1];
     }
     if (!ip || !/^[\da-fA-F:.]+$/.test(ip))
-      throw new Error(t("未获取到可读取的出口 IP"));
+      throw new Error(t("home.noReadableEgressIpObtained"));
     geo = { ip, source: site.name };
   } else {
     const headers = await request<Headers>(
@@ -181,7 +187,7 @@ export async function detectSite(
       headers.get("x-request-ip") ??
       headers.get("x-response-cinfo");
     if (!ip || !/^[\da-fA-F:.]+$/.test(ip))
-      throw new Error(t("未获取到可读取的出口 IP"));
+      throw new Error(t("home.noReadableEgressIpObtained"));
     geo = { ip, source: site.name };
   }
   return geo;
@@ -206,6 +212,6 @@ export async function getBrowserIp(
       ? !data.ip.includes(":")
       : !/^\d{1,3}(\.\d{1,3}){3}$/.test(data.ip))
   )
-    throw new Error(t("未获取到有效 IP"));
+    throw new Error(t("home.noValidIpObtained"));
   return { ip: data.ip, source: "ipify" };
 }

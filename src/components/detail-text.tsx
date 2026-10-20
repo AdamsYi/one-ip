@@ -11,7 +11,7 @@ import { UnderlineHover } from "./underline-hover";
 
 export function DetailText({
   text,
-  title = t("完整内容"),
+  title = t("common.fullContent"),
 }: {
   text: string;
   title?: string;
@@ -42,7 +42,7 @@ export function DetailText({
         open={open}
         onOpenChange={setOpen}
         title={title}
-        description={t("完整内容")}
+        description={t("common.fullContent")}
       >
         <p className="whitespace-pre-wrap break-all">{text}</p>
       </ResponsiveDialog>

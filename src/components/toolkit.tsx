@@ -20,12 +20,12 @@ import { UnderlineHover } from "@/components/underline-hover";
 import { t } from "@/i18n";
 import { maskedIp } from "@/lib/network";
 import { hideIpAtom } from "@/store/privacy";
+import { flexRender, type RowData } from "@tanstack/react-table";
 import {
-  flexRender,
   getCoreRowModel,
-  useReactTable,
-  type ColumnDef,
-} from "@tanstack/react-table";
+  useLegacyTable,
+  type LegacyColumnDef as ColumnDef,
+} from "@tanstack/react-table/legacy";
 import { gsap } from "gsap";
 import { useAtom, useAtomValue } from "jotai";
 import { Eye, EyeOff } from "lucide-react";
@@ -55,7 +55,9 @@ export function PageHeading({
 export function PrivacyToggle({ iconOnly = false }: { iconOnly?: boolean }) {
   const [hidden, setHidden] = useAtom(hideIpAtom);
   if (iconOnly) {
-    const label = hidden ? t("显示 IP 地址") : t("隐藏 IP 地址");
+    const label = hidden
+      ? t("common.showIpAddresses")
+      : t("common.hideIpAddresses");
     return (
       <Button
         type="button"
@@ -72,9 +74,9 @@ export function PrivacyToggle({ iconOnly = false }: { iconOnly?: boolean }) {
   }
   return (
     <label className="privacy-toggle">
-      <span>{t("隐藏IP")}</span>
+      <span>{t("common.hideIp")}</span>
       <Switch
-        aria-label={t("隐藏 IP 地址")}
+        aria-label={t("common.hideIpAddresses")}
         checked={hidden}
         onCheckedChange={setHidden}
       />
@@ -83,7 +85,7 @@ export function PrivacyToggle({ iconOnly = false }: { iconOnly?: boolean }) {
 }
 export function IpText({ ip, link = true }: { ip?: string; link?: boolean }) {
   const hidden = useAtomValue(hideIpAtom);
-  if (!ip) return <span className="muted">{t("未知")}</span>;
+  if (!ip) return <span className="muted">{t("common.unknown")}</span>;
   const text = maskedIp(ip, hidden);
   const content = <CompactText text={text} middle tooltip={false} />;
   return (
@@ -141,7 +143,7 @@ export function Facts({
               {typeof value === "number" ? (
                 <NumberTicker value={value} />
               ) : (
-                (value ?? t("未知"))
+                (value ?? t("common.unknown"))
               )}
             </AnimatedValue>
           </dd>
@@ -150,7 +152,11 @@ export function Facts({
     </dl>
   );
 }
-export function Pending({ children = t("检测中…") }: { children?: ReactNode }) {
+export function Pending({
+  children = t("common.checking"),
+}: {
+  children?: ReactNode;
+}) {
   return <SweepShine role="status">{children}</SweepShine>;
 }
 export function ErrorNotice({ error }: { error: unknown }) {
@@ -191,10 +197,10 @@ export function ActionButton({
     </Button>
   );
 }
-export function DataTable<T>({
+export function DataTable<T extends RowData>({
   data,
   columns,
-  empty = t("暂无数据"),
+  empty = t("common.noData"),
   className = "",
   getRowId,
   getRowClassName,
@@ -212,7 +218,7 @@ export function DataTable<T>({
   animateSorting?: boolean;
   animateEntries?: boolean;
 }) {
-  const table = useReactTable({
+  const table = useLegacyTable({
     data,
     columns,
     getRowId,
@@ -330,7 +336,7 @@ export function DataTable<T>({
 }
 export function ReadingLinks({
   links,
-  title = t("拓展阅读"),
+  title = t("common.furtherReadingLabel"),
 }: {
   links: { path: string; title: string }[];
   title?: string;

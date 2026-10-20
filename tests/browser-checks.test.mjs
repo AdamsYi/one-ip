@@ -8,18 +8,18 @@ import {
 test("platform comparisons account for normal Android, ChromeOS and iPad compatibility values", () => {
   assert.equal(
     comparePlatforms("Mozilla Android", "Linux armv8", 5).status,
-    "一致",
+    "consistent",
   );
   assert.equal(
     comparePlatforms("Mozilla CrOS", "Linux x86_64", 0).status,
-    "一致",
+    "consistent",
   );
-  assert.equal(comparePlatforms("Mozilla iPad", "MacIntel", 5).status, "一致");
+  assert.equal(comparePlatforms("Mozilla iPad", "MacIntel", 5).status, "consistent");
   assert.equal(
     comparePlatforms("Mozilla Windows NT", "MacIntel", 0).status,
-    "存在差异",
+    "different",
   );
-  assert.equal(comparePlatforms("redacted", "", 0).status, "无法检测");
+  assert.equal(comparePlatforms("redacted", "", 0).status, "unavailable");
 });
 test("context comparison distinguishes missing fields from contradictory values", () => {
   const data = {
@@ -30,10 +30,10 @@ test("context comparison distinguishes missing fields from contradictory values"
     hardwareConcurrency: 8,
     timezone: "Asia/Shanghai",
   };
-  assert.equal(compareContexts(data, { ...data }, "test").status, "一致");
+  assert.equal(compareContexts(data, { ...data }, "test").status, "consistent");
   assert.equal(
     compareContexts(data, { ...data, language: "en-US" }, "test").status,
-    "存在差异",
+    "different",
   );
-  assert.equal(compareContexts(data, {}, "test").status, "无法检测");
+  assert.equal(compareContexts(data, {}, "test").status, "unavailable");
 });

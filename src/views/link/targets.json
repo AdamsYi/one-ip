@@ -19,7 +19,8 @@
     "slug": "douyin",
     "host": "www.douyin.com",
     "url": "https://lf3-static.bytednsdoc.com/obj/eden-cn/favicon.ico",
-    "icon": "https://www.douyin.com/favicon.ico"
+    "icon": "https://www.douyin.com/favicon.ico",
+    "nameKey": "sites.douyin"
   },
   {
     "cc": "cn",
@@ -27,7 +28,8 @@
     "slug": "bilibili",
     "host": "www.bilibili.com",
     "url": "https://www.bilibili.com/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/www.bilibili.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/www.bilibili.com.ico",
+    "nameKey": "sites.bilibili"
   },
   {
     "cc": "cn",
@@ -35,27 +37,31 @@
     "slug": "jd",
     "host": "www.jd.com",
     "url": "https://www.jd.com/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/www.jd.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/www.jd.com.ico",
+    "nameKey": "sites.jd"
   },
   {
     "cc": "cn",
     "name": "腾讯QQ",
     "host": "www.qq.com",
     "url": "https://www.qq.com/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/qq.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/qq.com.ico",
+    "nameKey": "sites.qq"
   },
   {
     "cc": "cn",
     "name": "微信",
     "url": "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/weixin.qq.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/weixin.qq.com.ico",
+    "nameKey": "sites.wechat"
   },
   {
     "cc": "cn",
     "name": "小红书",
     "slug": "xiaohongshu",
     "url": "https://fe-static.xhscdn.com/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/xiaohongshu.com.ico",
+    "nameKey": "sites.xiaohongshu"
   },
   {
     "cc": "cn",
@@ -63,7 +69,8 @@
     "slug": "weibo",
     "host": "weibo.com",
     "url": "https://tva1.sinaimg.cn/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/weibo.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/weibo.com.ico",
+    "nameKey": "sites.weibo"
   },
   {
     "cc": "cn",
@@ -71,21 +78,24 @@
     "slug": "baidu",
     "host": "www.baidu.com",
     "url": "https://www.baidu.com/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/www.baidu.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/www.baidu.com.ico",
+    "nameKey": "sites.baidu"
   },
   {
     "cc": "cn",
     "name": "网易",
     "host": "www.163.com",
     "url": "https://www.163.com/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/163.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/163.com.ico",
+    "nameKey": "sites.netease"
   },
   {
     "cc": "cn",
     "name": "淘宝",
     "host": "www.taobao.com",
     "url": "https://www.taobao.com/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/www.taobao.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/www.taobao.com.ico",
+    "nameKey": "sites.taobao"
   },
   {
     "cc": "cn",
@@ -93,7 +103,8 @@
     "slug": "mi",
     "host": "www.mi.com",
     "url": "https://www.mi.com/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/www.mi.com.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/www.mi.com.ico",
+    "nameKey": "sites.xiaomi"
   },
   {
     "cc": "jp",
@@ -109,7 +120,8 @@
     "slug": "nintendo",
     "host": "www.nintendo.co.jp",
     "url": "https://www.nintendo.co.jp/favicon.ico",
-    "icon": "https://icons.duckduckgo.com/ip3/www.nintendo.co.jp.ico"
+    "icon": "https://icons.duckduckgo.com/ip3/www.nintendo.co.jp.ico",
+    "nameKey": "sites.nintendo"
   },
   {
     "cc": "jp",

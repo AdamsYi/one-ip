@@ -40,12 +40,16 @@ export function DeepPanel() {
       );
       if (!active.signal.aborted) {
         setResult(next);
-        toast.success(t("深度检测完成"));
+        toast.success(t("browser.deep.deepDiagnosticsComplete"));
       }
     } catch (error) {
       if (!active.signal.aborted) {
-        setError(error instanceof Error ? error : new Error(t("检测失败")));
-        toast.error(t("深度检测失败，请重试"));
+        setError(
+          error instanceof Error
+            ? error
+            : new Error(t("browser.deep.checkFailed")),
+        );
+        toast.error(t("browser.deep.deepDiagnosticsFailedPleaseRetry"));
       }
     } finally {
       if (!active.signal.aborted) setBusy(false);
@@ -65,32 +69,33 @@ export function DeepPanel() {
   const flagged = reports?.filter((module) => module.report.signal) ?? [];
   const readErrors = reports?.find(
     (module) =>
-      module.name === "errors" && module.report.status === t("存在读取错误"),
+      module.name === "errors" &&
+      module.report.status === t("common.readErrorsFound"),
   );
   const unavailable =
     reports?.filter((module) => module.report.unavailable) ?? [];
   return (
     <div className="mt-3">
-      <ToolCard title={t("浏览器深度检测")}>
+      <ToolCard title={t("browser.deep.deepBrowserDiagnostics")}>
         <div className="row-between gap-3">
           <p className="small muted">
-            {t("基于")}{" "}
+            {t("browser.deep.basedOn")}{" "}
             <a
               href="https://github.com/abrahamjuliot/creepjs"
               target="_blank"
               rel="noreferrer"
             >
-              {t("CreepJS 开源检测模块")}
+              {t("browser.deep.creepjsOpenSourceDiagnostics")}
             </a>
-            {t("，由本站本地运行。")}
+            {t("browser.deep.runLocallyByThisSite")}
           </p>
           <Button disabled={busy} onClick={run}>
             {busy ? (
-              <Pending>{t("检测中…")}</Pending>
+              <Pending>{t("common.checking")}</Pending>
             ) : result ? (
-              t("重新检测")
+              t("common.runAgain")
             ) : (
-              t("开始深度检测")
+              t("browser.deep.startDeepDiagnostics")
             )}
           </Button>
         </div>
@@ -100,19 +105,23 @@ export function DeepPanel() {
             <div className="my-3 rounded-lg bg-muted/50 p-3" role="status">
               <p className="font-medium">
                 {flagged.length
-                  ? t("{0} 个模块发现需要核对的信号", [flagged.length])
+                  ? t("browser.deep.modulesWithSignals", [flagged.length])
                   : unavailable.length || readErrors
-                    ? t("已完成的检查未发现异常信号，但检测结果不完整")
-                    : t("本次检测未发现异常信号")}
+                    ? t(
+                        "browser.deep.completedChecksFoundUnusualSignalsButResultsIncomplete",
+                      )
+                    : t("browser.deep.noUnusualSignalsFoundInThisCheck")}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {flagged.length
                   ? flagged
                       .map((module) => fieldLabel(module.name))
                       .join("、") +
-                    t("。多个模块可能记录同一个原因，不代表存在多个独立问题。")
+                    t(
+                      "browser.deep.multipleModulesReportSameCauseTheseNecessarilyIndependent",
+                    )
                   : t(
-                      "此结论仅覆盖本次已执行的检查，不是浏览器真实性或安全性证明。",
+                      "browser.deep.conclusionCoversChecksPerformedProofBrowserAuthenticitySecurity",
                     )}
               </p>
               {readErrors && (
@@ -122,7 +131,7 @@ export function DeepPanel() {
               )}
               {unavailable.length > 0 && (
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {t("无法检测：")}
+                  {t("browser.deep.unableToCheck")}
                   {unavailable
                     .map((module) => fieldLabel(module.name))
                     .join("、")}
@@ -140,11 +149,11 @@ export function DeepPanel() {
             </div>
             <Facts
               rows={[
-                [t("源码版本"), result.commit.slice(0, 12)],
-                [t("检测耗时"), `${result.duration} ms`],
+                [t("browser.deep.sourceVersion"), result.commit.slice(0, 12)],
+                [t("browser.deep.duration"), `${result.duration} ms`],
                 [
-                  t("已返回数据的模块"),
-                  `${result.modules.filter((module) => module.status === t("已完成")).length}/${result.modules.length}`,
+                  t("browser.deep.modulesWithReturnedData"),
+                  `${result.modules.filter((module) => module.status === t("common.complete")).length}/${result.modules.length}`,
                 ],
               ]}
             />
@@ -153,15 +162,16 @@ export function DeepPanel() {
               columns={[
                 {
                   accessorKey: "name",
-                  header: t("检测模块"),
+                  header: t("browser.deep.diagnosticModules"),
                   cell: ({ row }) => (
                     <UnderlineHover asChild>
                       <button
                         type="button"
                         className="max-w-full truncate text-left text-primary focus-visible:outline-ring"
-                        aria-label={t("查看 {0} 深度检测详情", [
-                          row.original.name,
-                        ])}
+                        aria-label={t(
+                          "browser.deep.viewDeepDiagnosticDetails",
+                          [row.original.name],
+                        )}
                         onClick={() => setDetail(row.original)}
                       >
                         {fieldLabel(row.original.name)}
@@ -171,12 +181,12 @@ export function DeepPanel() {
                 },
                 {
                   id: "status",
-                  header: t("检测结果"),
+                  header: t("browser.deep.diagnosticResults"),
                   cell: ({ row }) => row.original.report.status,
                 },
                 {
                   id: "summary",
-                  header: t("结果说明"),
+                  header: t("browser.deep.aboutTheResults"),
                   cell: ({ row }) => (
                     <span className="text-sm text-muted-foreground">
                       {row.original.report.summary}
@@ -188,9 +198,7 @@ export function DeepPanel() {
           </>
         )}
         <p className="small muted mt-3">
-          {t(
-            "结果来自同源独立检测上下文，可能与主页面或官方站点不同。异常信号不能证明使用了指纹浏览器。未包含官方联网评分和 Worker 检测。",
-          )}
+          {t("browser.deep.resultsComeSeparateSameOriginDiagnosticContextMay")}
         </p>
       </ToolCard>
       <ResponsiveDialog
@@ -198,13 +206,13 @@ export function DeepPanel() {
         onOpenChange={(open) => {
           if (!open) setDetail(null);
         }}
-        title={t("{0} · 详情", [
-          detail ? fieldLabel(detail.name) : t("深度检测"),
+        title={t("common.namedDetails", [
+          detail ? fieldLabel(detail.name) : t("browser.deep.deepDiagnostics"),
         ])}
         description={
           detail
             ? moduleReport(detail.name, parseDetail(detail.detail)).summary
-            : t("本次检测结果")
+            : t("browser.deep.resultsForThisCheck")
         }
       >
         {detail && (

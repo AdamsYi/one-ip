@@ -1,5 +1,13 @@
 import { publicIp, upstream } from "./http.js";
 
+function matchesIp(value, ip) {
+  try {
+    return publicIp(value) === ip;
+  } catch {
+    return false;
+  }
+}
+
 export function cfGeo(request) {
   const cf = request.cf ?? {};
   return {
@@ -17,9 +25,10 @@ export function cfGeo(request) {
   };
 }
 export async function geoIp(ip) {
-  publicIp(ip);
+  ip = publicIp(ip);
   const data = await upstream(`https://ipwho.is/${encodeURIComponent(ip)}`);
-  if (!data.success) throw new Error("IP 归属地数据源未返回有效结果");
+  if (!data?.success || !matchesIp(data.ip, ip))
+    throw new Error("IP 归属地数据源未返回有效结果");
   return {
     ip: data.ip,
     country: data.country,
@@ -35,11 +44,11 @@ export async function geoIp(ip) {
   };
 }
 export async function secondaryGeo(ip) {
-  publicIp(ip);
+  ip = publicIp(ip);
   const data = await upstream(
     `https://api.ip.sb/geoip/${encodeURIComponent(ip)}`,
   );
-  if (!data.ip) throw new Error("第二归属地数据源未返回结果");
+  if (!matchesIp(data?.ip, ip)) throw new Error("第二归属地数据源未返回结果");
   return {
     ip: data.ip,
     country: data.country,

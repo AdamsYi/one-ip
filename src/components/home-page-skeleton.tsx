@@ -68,11 +68,11 @@ function SectionSkeleton({ rows = 3 }: { rows?: number }) {
 export function HomePageSkeleton() {
   return (
     <div className="home-page" aria-busy="true">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="home-toolbar">
         <Skeleton className="h-5 w-24" />
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-7 w-36 sm:w-44" />
-          <Skeleton className="h-7 w-20" />
+        <div className="home-toolbar-actions">
+          <Skeleton className="home-ip-search h-8" />
+          <Skeleton className="h-8 w-28 shrink-0" />
         </div>
       </div>
       <div className="home-overview home-ip-overview">

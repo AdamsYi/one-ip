@@ -19,11 +19,11 @@ export function IpLatency({
       className="ip-latency-card"
       title={
         <span className="flex flex-wrap items-center justify-between gap-2">
-          <span>{t("全球延迟测试")}</span>
+          <span>{t("common.globalLatencyTest")}</span>
           <span className="ml-auto flex shrink-0 items-center gap-1.5">
             <Button asChild size="sm" variant="outline" className="text-xs">
               <Link to={`/network/ping/?host=${encodeURIComponent(ip)}`}>
-                {t("完整测试")}
+                {t("ip.latency.fullTestLabel")}
                 <ArrowUpRight aria-hidden="true" />
               </Link>
             </Button>
@@ -40,7 +40,11 @@ export function IpLatency({
                 ) : (
                   <Play aria-hidden="true" />
                 ))}
-              {busy ? t("检测中…") : started ? t("重新检测") : t("开始测试")}
+              {busy
+                ? t("common.checking")
+                : started
+                  ? t("common.runAgain")
+                  : t("ip.latency.startTest")}
             </ActionButton>
           </span>
         </span>
@@ -63,7 +67,7 @@ export function IpLatency({
                 className="ip-latency-item"
                 title={
                   node
-                    ? `${node.city} · ${node.preferredNetwork ?? ""} · AS${node.preferredAsn}${stats ? ` · ${t("丢包")} ${stats.loss}%` : ""}`
+                    ? `${node.city} · ${node.preferredNetwork ?? ""} · AS${node.preferredAsn}${stats ? ` · ${t("common.packetLoss")} ${stats.loss}%` : ""}`
                     : undefined
                 }
               >
@@ -95,19 +99,19 @@ export function IpLatency({
                   ) : (
                     <span className="text-[10px] font-normal text-muted-foreground">
                       {!started
-                        ? t("待检测")
+                        ? t("common.notChecked")
                         : !node
                           ? catalogLoaded
-                            ? t("暂无优选探针")
-                            : t("查询失败")
-                          : t("无响应")}
+                            ? t("ip.latency.noPreferredProbe")
+                            : t("ip.latency.lookupFailed")
+                          : t("common.noResponse")}
                     </span>
                   )}
                 </div>
                 {stats && stats.loss > 0 && (
                   <span
                     className="ip-latency-loss text-[10px] text-destructive"
-                    title={t("丢包")}
+                    title={t("common.packetLoss")}
                   >
                     <NumberTicker value={stats.loss} />%
                   </span>

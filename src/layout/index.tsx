@@ -10,16 +10,21 @@ import { Pending } from "@/components/toolkit";
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { UnderlineHover } from "@/components/underline-hover";
+import { useAvailableTools } from "@/hooks/use-available-tools";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/hooks/use-theme";
 import { t } from "@/i18n";
 import { Search, Globe, Cable, Activity, Sparkles } from "lucide-react";
 import { Tabs } from "radix-ui";
 import { Toaster } from "sonner";
+import { DesktopNavigation } from "./desktop-navigation";
+import { MobileToolNavigation } from "./mobile-tool-navigation";
+import type { NavigationMenus } from "./navigation-menus";
 import { RouteErrorBoundary } from "./route-error-boundary";
-import { activeNavigationRoute, navigationRoutes } from "./routes";
+import { activeNavigationRoute, navigationRoutes, toolGroups } from "./routes";
 
 const MobileNavGlass = lazy(() => import("@/components/mobile-nav-glass"));
+const currentYear = new Date().getFullYear();
 
 const menuIcons = {
   "/": Search,
@@ -50,6 +55,12 @@ export function AppLayout() {
   const navigate = useNavigate();
   const navRef = useRef<HTMLElement>(null);
   const activeRoute = activeNavigationRoute(pathname);
+  const browserTools = useAvailableTools("browser");
+  const menus: NavigationMenus = {
+    "/network/": toolGroups.network,
+    "/browser/": browserTools,
+    "/ai/": toolGroups.ai,
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -57,7 +68,7 @@ export function AppLayout() {
       "[data-slot=scroll-area-viewport]",
     );
     const trigger = navRef.current?.querySelector<HTMLElement>(
-      "[role=tab][data-state=active]",
+      '[role="tab"][aria-selected="true"]',
     );
     if (!viewport || !trigger) return;
     const parent = viewport.getBoundingClientRect();
@@ -84,7 +95,7 @@ export function AppLayout() {
           <Link
             to="/"
             className="flex items-center gap-2 text-sm font-semibold"
-            aria-label={t("IP 网络工具概览")}
+            aria-label={t("navigation.siteTitle")}
           >
             <img src="/icon.svg" width="24" height="24" alt="" />
           </Link>
@@ -94,20 +105,35 @@ export function AppLayout() {
             <ThemeToggleButton className="size-8 rounded-full text-muted-foreground" />
           </div>
         </header>
+        {mobile && menus[activeRoute] && (
+          <MobileToolNavigation
+            label={
+              navigationRoutes.find((route) => route.value === activeRoute)!
+                .label
+            }
+            overviewPath={activeRoute.replace(/\/$/, "")}
+            items={menus[activeRoute]!}
+          />
+        )}
         <AnimatedSegmentedTabs
-          label={t("网络诊断工具")}
+          label={t("navigation.diagnostics")}
           options={options}
           value={activeRoute}
           onValueChange={(value) => {
             if (value !== activeRoute) navigate(value);
           }}
           activationMode="manual"
+          listVisible={mobile}
           className="min-w-0"
           listClassName="h-9 w-max justify-start gap-0.5 bg-transparent p-0"
           highlightClassName="rounded-lg bg-primary/10 shadow-none ring-0"
-          triggerClassName="h-9 flex-none rounded-lg border-0 px-2 text-[13px] text-muted-foreground hover:bg-accent/50 data-[state=active]:font-semibold data-[state=active]:text-primary"
+          triggerClassName="h-9 flex-none rounded-lg border-0 px-2 text-[13px] text-muted-foreground hover:bg-accent/50 aria-selected:font-semibold aria-selected:text-primary"
           renderList={(list) => (
-            <nav ref={navRef} className="app-nav" aria-label={t("主导航")}>
+            <nav
+              ref={navRef}
+              className="app-nav"
+              aria-label={t("navigation.main")}
+            >
               {mobile && (
                 <Suspense fallback={null}>
                   <MobileNavGlass light={resolvedTheme === "light"} />
@@ -115,15 +141,19 @@ export function AppLayout() {
               )}
               <Link
                 to="/"
-                aria-label={t("IP 网络工具概览")}
+                aria-label={t("navigation.siteTitle")}
                 className="site-home-link flex size-9 shrink-0 items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
               >
                 <img src="/icon.svg" alt="" width="32" height="32" />
               </Link>
-              <ScrollArea className="nav-tabs-scroll">
-                {list}
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
+              {mobile ? (
+                <ScrollArea className="nav-tabs-scroll">
+                  {list}
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+              ) : (
+                <DesktopNavigation menus={menus} activeRoute={activeRoute} />
+              )}
               <div className="desktop-preferences flex items-center gap-1">
                 <ShareSite />
                 <LanguageSelect />
@@ -132,7 +162,15 @@ export function AppLayout() {
             </nav>
           )}
         >
-          <Tabs.Content value={activeRoute} asChild>
+          <Tabs.Content
+            value={activeRoute}
+            aria-labelledby={undefined}
+            aria-label={
+              navigationRoutes.find((route) => route.value === activeRoute)
+                ?.label ?? t("navigation.diagnostics")
+            }
+            asChild
+          >
             <main className="outline-none">
               <RouteErrorBoundary key={activeRoute}>
                 <Suspense
@@ -141,7 +179,7 @@ export function AppLayout() {
                       <HomePageSkeleton />
                     ) : (
                       <p className="status-line">
-                        <Pending>{t("正在加载页面…")}</Pending>
+                        <Pending>{t("navigation.loadingPage")}</Pending>
                       </p>
                     )
                   }
@@ -153,14 +191,14 @@ export function AppLayout() {
           </Tabs.Content>
         </AnimatedSegmentedTabs>
         <footer className="app-footer">
-          © {new Date().getFullYear()} IP ·{" "}
+          © {currentYear} IP ·{" "}
           <UnderlineHover asChild>
             <a
               href="https://huzhihui.com/blog/one-ip-guide"
               target="_blank"
               rel="noopener noreferrer"
             >
-              {t("使用文档")}
+              {t("navigation.documentation")}
             </a>
           </UnderlineHover>{" "}
           ·{" "}
@@ -169,11 +207,11 @@ export function AppLayout() {
           </UnderlineHover>{" "}
           ·{" "}
           <UnderlineHover asChild>
-            <Link to="/terms">{t("使用条款")}</Link>
+            <Link to="/terms">{t("policy.terms")}</Link>
           </UnderlineHover>{" "}
           ·{" "}
           <UnderlineHover asChild>
-            <Link to="/privacy">{t("隐私政策")}</Link>
+            <Link to="/privacy">{t("policy.privacy")}</Link>
           </UnderlineHover>{" "}
           ·{" "}
           <UnderlineHover asChild>
@@ -188,11 +226,20 @@ export function AppLayout() {
           </UnderlineHover>{" "}
           ·{" "}
           <UnderlineHover asChild>
-            <a href="mailto:ip@huzhihui.com">{t("联系作者")}</a>
+            <a href="mailto:ip@huzhihui.com">{t("policy.contactAuthor")}</a>
+          </UnderlineHover>{" "}
+          ·{" "}
+          <UnderlineHover asChild>
+            <a href="https://ipbot.net">
+              {t("navigation.ipbotCommercialSite")}
+            </a>
           </UnderlineHover>
         </footer>
       </div>
-      <aside aria-label={t("站点通知")} className="update-notices">
+      <aside
+        aria-label={t("navigation.notifications")}
+        className="update-notices"
+      >
         <AppUpdateChecker />
       </aside>
       <BuildInfo />

@@ -31,7 +31,9 @@ export function ThemeToggleButton({
   const animationRef = useRef<Animation | null>(null);
   const buttonLabel =
     label ??
-    (resolvedTheme === "dark" ? t("切换为浅色模式") : t("切换为深色模式"));
+    (resolvedTheme === "dark"
+      ? t("appearance.switchToLightMode")
+      : t("appearance.switchToDarkMode"));
 
   useEffect(
     () => () => {

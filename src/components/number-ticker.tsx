@@ -21,6 +21,7 @@ export function NumberTicker({
   useLayoutEffect(() => {
     const node = nodeRef.current;
     if (!node) return;
+    const animated = current.current;
     const next = Number.isFinite(value) ? value : 0;
     const media = gsap.matchMedia();
     media.add(
@@ -30,22 +31,22 @@ export function NumberTicker({
       },
       (context) => {
         const render = () => {
-          node.textContent = formatValue(current.current.value);
+          node.textContent = formatValue(animated.value);
         };
         if (context.conditions?.reduced) {
-          current.current.value = next;
+          animated.value = next;
           render();
           return;
         }
         render();
-        const tween = gsap.to(current.current, {
+        const tween = gsap.to(animated, {
           value: next,
           duration,
           ease: "power2.out",
           snap: { value: snap },
           onUpdate: render,
           onComplete: () => {
-            current.current.value = next;
+            animated.value = next;
             render();
           },
         });
@@ -55,9 +56,9 @@ export function NumberTicker({
       },
     );
     return () => {
-      const displayed = current.current.value;
+      const displayed = animated.value;
       media.revert();
-      current.current.value = displayed;
+      animated.value = displayed;
     };
   }, [value, formatValue, duration, snap]);
   return (

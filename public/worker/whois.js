@@ -52,7 +52,14 @@ export async function lookupRegistration(query) {
     if (!base) throw error;
     data = await upstream(new URL(path, base).href, options);
   }
-  return { source: "RDAP · 注册局实时数据", query: raw, data };
+  if (
+    !data ||
+    typeof data !== "object" ||
+    Array.isArray(data) ||
+    Object.hasOwn(data, "errorCode")
+  )
+    throw new HttpError(502, "注册信息数据源未返回有效结果");
+  return { source: "RDAP · 注册局公开数据", query: raw, data };
 }
 
 function ipNumber(ip) {

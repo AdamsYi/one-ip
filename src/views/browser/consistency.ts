@@ -2,7 +2,8 @@ import { t } from "@/i18n";
 
 export interface Check {
   name: string;
-  status: "一致" | "存在差异" | "检测到特征" | "未发现特征" | "无法检测";
+  status:
+    "consistent" | "different" | "detected" | "not-detected" | "unavailable";
   detail: string;
 }
 export function platformFamily(value: string) {
@@ -28,11 +29,12 @@ export function comparePlatforms(
     (left === "ChromeOS" && right === "Linux") ||
     (left === "iOS" && right === "macOS" && touchPoints > 1);
   return {
-    name: t("UA / 平台"),
-    status: !left || !right ? "无法检测" : compatible ? "一致" : "存在差异",
-    detail: t("{0} / {1}。兼容模式和隐私设置也可能影响这些值。", [
-      left ?? t("未知"),
-      right ?? t("未知"),
+    name: t("browser.uaPlatform"),
+    status:
+      !left || !right ? "unavailable" : compatible ? "consistent" : "different",
+    detail: t("browser.platformComparisonDetail", [
+      left ?? t("common.unknown"),
+      right ?? t("common.unknown"),
     ]),
   };
 }
@@ -60,14 +62,14 @@ export function compareContexts(
   return {
     name,
     status: differences.length
-      ? "存在差异"
+      ? "different"
       : missing.length
-        ? "无法检测"
-        : "一致",
+        ? "unavailable"
+        : "consistent",
     detail: differences.length
-      ? t("不同字段：{0}", [differences.join("、")])
+      ? t("browser.differentFieldsList", [differences.join("、")])
       : missing.length
-        ? t("未提供：{0}", [missing.join("、")])
-        : t("已读取的语言、平台、UA、处理器与时区一致。"),
+        ? t("browser.missingFieldsList", [missing.join("、")])
+        : t("browser.availableLanguagePlatformUaProcessorTimezoneValuesMatch"),
   };
 }

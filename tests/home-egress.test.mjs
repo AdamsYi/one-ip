@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { compile } from "./compile.mjs";
 import * as jsx from "react/jsx-runtime";
+import { t } from "../src/i18n/index.ts";
 
 const outputText = compile(readFileSync("src/views/home/index.tsx", "utf8"), {
   format: "cjs",
@@ -13,7 +14,7 @@ function render(primary, split, client = {}, capture = () => {}) {
   const require = (name) => {
     if (name === "react/jsx-runtime") return jsx;
     if (name === "react") return { useEffect() {}, useState: () => [false, () => {}] };
-    if (name === "@/i18n") return { t: (text) => text };
+    if (name === "@/i18n") return { t };
     if (name === "@/hooks/use-mobile") return { useIsMobile: () => false };
     if (name === "@/hooks/use-available-tools") return { useAvailableTools: () => [] };
     if (name === "@/layout/routes") return { toolGroups: { network: [], ai: [] } };
@@ -40,8 +41,8 @@ test("domestic egress comes first and external IPv4 remains separate", () => {
   const proxy = { ip: "192.0.2.2" };
   const result = render([{ data: ipv4 }, { data: proxy }, failed], [{ data: ipv6 }, { data: { ip: "192.0.2.3" } }]);
   assert.ok(result.indexOf(ipv4.ip) < result.indexOf(proxy.ip));
-  assert.ok(result.includes("IPv4 · 国内探测"));
-  assert.ok(result.includes("IPv4 · 外部探测"));
+  assert.ok(result.includes(t("home.ipv4DomesticProbe")));
+  assert.ok(result.includes(t("home.ipv4ExternalProbe")));
   assert.ok(!result.includes(ipv6.ip));
   assert.ok(!result.includes("192.0.2.3"));
 });
@@ -52,8 +53,8 @@ test("matching domestic and external IPv4 produces one card", () => {
 });
 test("failed domestic probe never promotes a proxy or routed IPv6 to local egress", () => {
   const result = render([failed, { data: ipv4 }, failed], [{ data: ipv6 }]);
-  assert.ok(!result.includes("未获取到 IPv"));
-  assert.ok(result.includes("IPv4 · 外部探测"));
+  assert.ok(!result.includes(t("home.couldNotDetectIpv")));
+  assert.ok(result.includes(t("home.ipv4ExternalProbe")));
   assert.ok(!result.includes(ipv6.ip));
 });
 test("IPv6 and failed probes do not create overview cards", () => {

@@ -13,11 +13,14 @@ export function LookupFaq({
   items: { title: string; text: string }[];
 }) {
   return (
-    <section className="lookup-faq" aria-label={t("常见问题")}>
+    <section
+      className="lookup-faq"
+      aria-label={t("lookup.frequentlyAskedQuestions")}
+    >
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {t("常见问题")}{" "}
+            {t("lookup.frequentlyAskedQuestions")}{" "}
             <span className="text-xs font-normal text-muted-foreground">
               FAQ
             </span>

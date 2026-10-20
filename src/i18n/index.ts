@@ -1,4 +1,6 @@
-import en from "./en.json" with { type: "json" };
+import { messages, type MessageKey } from "./messages.ts";
+
+export type { MessageKey } from "./messages.ts";
 
 export type Locale = "zh-CN" | "en";
 const storageKey = "ip-tools:locale";
@@ -28,13 +30,15 @@ function initialLocale(): Locale {
 }
 
 export const locale = initialLocale();
-const messages: Record<string, string> = en;
+const dictionary = messages[locale];
+const placeholder = /\{(\d+)\}/g;
 
-export function t(message: string, values: readonly unknown[] = []): string {
-  const upstream = message.match(/^外部数据源暂不可用 \((\d{3})\)$/);
-  if (upstream) return t("外部数据源暂不可用 ({0})", [upstream[1]]);
-  const translated = locale === "en" ? (messages[message] ?? message) : message;
-  return translated.replace(/\{(\d+)\}/g, (match, index: string) =>
+export function isMessageKey(key: string): key is MessageKey {
+  return Object.hasOwn(messages["zh-CN"], key);
+}
+
+export function t(key: MessageKey, values: readonly unknown[] = []): string {
+  return dictionary[key].replace(placeholder, (match, index: string) =>
     Number(index) < values.length ? String(values[Number(index)]) : match,
   );
 }
@@ -53,13 +57,8 @@ export function setLocale(next: Locale) {
 
 export function initializeLocale() {
   document.documentElement.lang = locale;
-  document.title = t("IP 网络工具概览");
+  document.title = t("navigation.siteTitle");
   const description = document.querySelector('meta[name="description"]');
   if (description)
-    description.setAttribute(
-      "content",
-      t(
-        "IP 查询、网站分流、WebRTC 检测、全球 Ping、服务状态和 WHOIS 查询工具。",
-      ),
-    );
+    description.setAttribute("content", t("navigation.siteDescription"));
 }

@@ -12,26 +12,29 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { t } from "@/i18n";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { detectDnsExits, dnsSampleCount, type DnsProgress } from "./api";
 
 type Resolver = DnsProgress["results"][number];
 const columns: ColumnDef<Resolver>[] = [
   {
     id: "ip",
-    header: t("DNS 出口 IP"),
+    header: t("dns.dnsEgressIp"),
     cell: ({ row }) => <IpText ip={row.original.ip} />,
   },
   {
     accessorKey: "geo",
-    header: t("归属地 / 运营商"),
+    header: t("dns.locationIsp"),
     cell: ({ row }) => (
-      <OverflowDetailText text={row.original.geo} title={t("DNS 归属信息")} />
+      <OverflowDetailText
+        text={row.original.geo}
+        title={t("dns.dnsLocationDetails")}
+      />
     ),
   },
   {
     id: "sources",
-    header: t("检测来源"),
+    header: t("dns.detectionSource"),
     cell: ({ row }) => (
       <div className="flex flex-wrap gap-1.5">
         {row.original.sources.map((source) => (
@@ -47,7 +50,7 @@ const columns: ColumnDef<Resolver>[] = [
   },
   {
     id: "samples",
-    header: t("观察次数"),
+    header: t("dns.observations"),
     cell: ({ row }) => <NumberTicker value={row.original.samples} />,
   },
 ];
@@ -75,24 +78,24 @@ export default function DnsExitPage() {
     : (query.data ?? progress.data);
   return (
     <>
-      <PageHeading title={t("DNS 出口查询")} description="" />
+      <PageHeading title={t("dns.dnsEgressLookup")} description="" />
       <div className="toolbar">
         <ActionButton
           busy={query.isFetching}
           onClick={() => setRound((n) => n + 1)}
         >
-          {query.isFetching ? t("检测中...") : t("重新检测")}
+          {query.isFetching ? t("common.checkingDots") : t("common.runAgain")}
         </ActionButton>
         <span className="small muted">
           <NumberTicker value={state?.count ?? 0} />/{dnsSampleCount}
-          {t("次采样 ·")} {state?.failed ?? 0}
-          {t("次失败")}
+          {t("dns.samples")} {state?.failed ?? 0}
+          {t("dns.failures")}
         </span>
       </div>
       <ErrorNotice error={query.error} />
       {state && state.failed > 0 && (
         <p className="small muted mb-3">
-          {t("部分探测失败，不代表没有 DNS 泄漏。")}{" "}
+          {t("dns.someProbesFailedDoesMeanThereDnsLeaks")}{" "}
           {Object.entries(state.failures)
             .map(([source, count]) => `${source}: ${count}`)
             .join(" · ")}
@@ -109,18 +112,16 @@ export default function DnsExitPage() {
             animateEntries
             empty={
               query.isFetching ? (
-                <Pending>{t("正在等待解析结果...")}</Pending>
+                <Pending>{t("dns.waitingForResolutionResults")}</Pending>
               ) : (
-                t("未检测到 DNS 出口")
+                t("dns.noDnsEgressDetected")
               )
             }
           />
         </CardContent>
       </Card>
       <p className="small muted mt-3">
-        {t(
-          "相同出口合并显示；出口数量取决于实际解析路径，不代表设备配置了相同数量的 DNS。",
-        )}
+        {t("dns.identicalEgressAddressesMergedTheirCountDependsActual")}
       </p>
     </>
   );

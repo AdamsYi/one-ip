@@ -31,6 +31,7 @@ import {
   Crown,
   Fingerprint,
   Network,
+  RotateCw,
   Search,
   ShieldCheck,
   Sparkles,
@@ -44,14 +45,22 @@ export function HomePage() {
   const mobile = useIsMobile();
   const browserTools = useAvailableTools("browser");
   const navigationGroups = [
-    { label: t("网络检测"), icon: Network, tools: toolGroups.network },
-    { label: t("浏览器检测"), icon: Fingerprint, tools: browserTools },
-    { label: t("AI 检测"), icon: Sparkles, tools: toolGroups.ai },
     {
-      label: t("服务状态"),
+      label: t("navigation.networkChecks"),
+      icon: Network,
+      tools: toolGroups.network,
+    },
+    {
+      label: t("navigation.browserChecks"),
+      icon: Fingerprint,
+      tools: browserTools,
+    },
+    { label: t("navigation.aiChecks"), icon: Sparkles, tools: toolGroups.ai },
+    {
+      label: t("navigation.serviceStatus"),
       icon: Activity,
       tools: [
-        { path: "/status/", label: t("全部服务") },
+        { path: "/status/", label: t("home.allServices") },
         { path: "/status/openai", label: "OpenAI" },
         { path: "/status/claude", label: "Claude" },
       ],
@@ -120,7 +129,7 @@ export function HomePage() {
     `${mobile}-${orderedTargets.map(({ target }) => target.name).join("|")}`,
   );
   useEffect(() => {
-    document.title = t("概览 - IP 网络工具");
+    document.title = t("home.overviewIpTools");
   }, []);
   const probes = useQueries({
     queries: [
@@ -145,7 +154,10 @@ export function HomePage() {
         query,
         data: query.data,
         version: 4,
-        label: index === 0 ? t("IPv4 · 国内探测") : t("IPv4 · 外部探测"),
+        label:
+          index === 0
+            ? t("home.ipv4DomesticProbe")
+            : t("home.ipv4ExternalProbe"),
       },
     ];
   });
@@ -174,20 +186,16 @@ export function HomePage() {
   const typeByIp = new Map(ips.map((ip, index) => [ip, typeQueries[index]]));
   return (
     <div className="home-page">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <h1 className="text-sm font-semibold">{t("网络概览")}</h1>
+      <div className="home-toolbar">
+        <div className="home-toolbar-heading">
+          <h1>{t("home.networkOverview")}</h1>
           <PrivacyToggle iconOnly />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="home-toolbar-actions">
           <IpSearch />
-          <ActionButton
-            size="sm"
-            variant="outline"
-            busy={refreshing}
-            onClick={refresh}
-          >
-            {refreshing ? t("检测中...") : t("重新检测")}
+          <ActionButton busy={refreshing} onClick={refresh}>
+            <RotateCw data-icon="inline-start" aria-hidden="true" />
+            {refreshing ? t("common.checkingDots") : t("common.runAgain")}
           </ActionButton>
         </div>
       </div>
@@ -219,25 +227,25 @@ export function HomePage() {
                   : null,
                 company.is_public_service === true
                   ? {
-                      label: t("公共服务"),
+                      label: t("common.publicService"),
                       color: "bg-primary/15 text-primary dark:bg-primary/20",
                     }
                   : null,
                 company.isResidential === true && !company.is_public_service
                   ? {
-                      label: t("家庭住宅 IP"),
+                      label: t("common.residentialIp"),
                       color: "bg-primary/25 text-primary dark:bg-primary/30",
                     }
                   : null,
                 company.is_datacenter === true && !company.is_public_service
                   ? {
-                      label: t("机房 IP"),
+                      label: t("home.datacenterIp"),
                       color: "bg-primary/5 text-primary dark:bg-primary/10",
                     }
                   : null,
                 company.is_mobile === true
                   ? {
-                      label: t("移动网络"),
+                      label: t("common.mobileNetwork"),
                       color: "bg-primary/15 text-primary dark:bg-primary/20",
                     }
                   : null,
@@ -245,7 +253,7 @@ export function HomePage() {
                 company.is_vpn === true ||
                 company.is_tor === true
                   ? {
-                      label: t("代理 / VPN / Tor"),
+                      label: t("home.proxyVpnTor"),
                       color: "bg-primary/10 text-primary dark:bg-primary/15",
                     }
                   : null,
@@ -262,7 +270,7 @@ export function HomePage() {
               {data && (
                 <Link
                   to={`/network/ip/${encodeURIComponent(data.ip)}`}
-                  aria-label={`${label} · ${t("IP 信息查询")}`}
+                  aria-label={`${label} · ${t("common.ipLookup")}`}
                   className="absolute inset-0 z-10 rounded-[inherit] transition-colors hover:bg-primary/[0.025] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                 />
               )}
@@ -284,7 +292,7 @@ export function HomePage() {
                 <div className="home-address-row">
                   <div className="ip-value">
                     {pending ? (
-                      <Pending>{t("加载中...")}</Pending>
+                      <Pending>{t("common.loading")}</Pending>
                     ) : geo ? (
                       <>
                         <CountryFlag code={geo.country_code} />
@@ -292,7 +300,7 @@ export function HomePage() {
                       </>
                     ) : (
                       <span className="muted">
-                        {t("未获取到 IPv")}
+                        {t("home.couldNotDetectIpv")}
                         {version}
                       </span>
                     )}
@@ -310,7 +318,9 @@ export function HomePage() {
                         {score === 100 && (
                           <Crown size={13} aria-hidden="true" />
                         )}
-                        {score === 100 ? t("满分信誉") : t("IP 信誉分")}
+                        {score === 100
+                          ? t("common.perfectReputation")
+                          : t("common.ipReputation")}
                       </span>
                       <strong>
                         <NumberTicker value={score} />
@@ -320,7 +330,7 @@ export function HomePage() {
                 </div>
                 <div className="primary-ip-meta text-sm text-muted-foreground">
                   {loading ? (
-                    <Pending>{t("正在查询归属信息…")}</Pending>
+                    <Pending>{t("common.lookingUpLocationDetails")}</Pending>
                   ) : geo?.country || geo?.city || geo?.isp ? (
                     <>
                       <p>
@@ -337,13 +347,13 @@ export function HomePage() {
                     </>
                   ) : data ? (
                     <div className="flex items-center justify-between gap-2 text-xs">
-                      <span>{t("归属信息暂不可用")}</span>
+                      <span>{t("common.locationDetailsAreUnavailable")}</span>
                       <button
                         type="button"
                         className="relative z-20 shrink-0 text-primary"
                         onClick={() => geoByIp.get(data.ip)?.refetch()}
                       >
-                        {t("重试")}
+                        {t("common.retry")}
                       </button>
                     </div>
                   ) : null}
@@ -355,10 +365,10 @@ export function HomePage() {
         <Card className="home-connectivity-card">
           <CardHeader>
             <div className="row-between">
-              <CardTitle>{t("网络连通性")}</CardTitle>
+              <CardTitle>{t("common.networkConnectivity")}</CardTitle>
               <UnderlineHover asChild>
                 <Link className="small muted" to="/network/connectivity/">
-                  {t("查看更多 ›")}
+                  {t("home.viewMore")}
                 </Link>
               </UnderlineHover>
             </div>
@@ -379,7 +389,7 @@ export function HomePage() {
       <BrowserSummary />
       <Card className="home-shortcuts">
         <CardHeader>
-          <CardTitle>{t("热门功能")}</CardTitle>
+          <CardTitle>{t("home.popularTools")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Link to="/ai/claude" className="shortcut-feature">
@@ -387,9 +397,9 @@ export function HomePage() {
               <SiteLogo website="https://claude.ai" />
             </span>
             <span className="shortcut-label">
-              <strong>{t("Claude 中国用户检测")}</strong>
+              <strong>{t("common.claudeChinaUserCheck")}</strong>
               <span className="shortcut-description">
-                {t("检查语言、时区与设备信号，了解浏览器暴露的环境特征。")}
+                {t("home.inspectLanguageTimezoneDeviceSignalsExposedBrowser")}
               </span>
             </span>
             <ArrowRight className="shortcut-arrow" aria-hidden="true" />
@@ -398,38 +408,42 @@ export function HomePage() {
             {[
               {
                 path: "/ai/gpt",
-                label: t("ChatGPT 检测"),
-                description: t("检查 AI 服务响应与访问出口"),
+                label: t("home.chatgptDiagnostics"),
+                description: t("home.checkAiServiceResponsesAndNetworkExits"),
                 icon: () => <SiteLogo website="https://chatgpt.com" />,
               },
               {
                 path: "/network/connectivity",
-                label: t("网站连通与出口"),
-                description: t("核对网站连通性、响应延迟和实际出口"),
+                label: t("common.connectivityEgress"),
+                description: t(
+                  "home.checkWebsiteConnectivityResponseLatencyAndActualEgress",
+                ),
                 icon: Network,
               },
               {
                 path: "/browser/challenges",
-                label: t("人机检测"),
-                description: t("体验验证码，查看验证结果"),
+                label: t("home.humanVerification"),
+                description: t(
+                  "home.tryVerificationChallengesAndReviewResults",
+                ),
                 icon: ShieldCheck,
               },
               {
                 path: "/browser/consistency",
-                label: t("环境一致性"),
-                description: t("核对浏览器环境与设备信号"),
+                label: t("common.consistency"),
+                description: t("home.checkBrowserEnvironmentAndDeviceSignals"),
                 icon: Search,
               },
               {
                 path: "/browser/fingerprint",
-                label: t("浏览器指纹"),
-                description: t("查看指纹组成与变化"),
+                label: t("common.browserFingerprint"),
+                description: t("home.exploreFingerprintComponentsAndChanges"),
                 icon: Fingerprint,
               },
               {
                 path: "/status/",
-                label: t("服务状态"),
-                description: t("查看平台故障与服务动态"),
+                label: t("navigation.serviceStatus"),
+                description: t("home.viewPlatformIncidentsAndServiceUpdates"),
                 icon: Activity,
               },
             ].map((tool) => (
@@ -453,11 +467,11 @@ export function HomePage() {
         <CardHeader>
           <div className="row-between">
             <CardTitle id="home-tool-directory-title">
-              {t("全部功能")}
+              {t("home.allTools")}
             </CardTitle>
             <UnderlineHover asChild>
               <Link className="small muted" to="/docs/api">
-                {t("API 文档")}
+                {t("common.apiDocumentation")}
               </Link>
             </UnderlineHover>
           </div>

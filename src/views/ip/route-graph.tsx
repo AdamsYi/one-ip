@@ -66,14 +66,14 @@ const SECONDARY_WIDTH = 200;
 function validationLabel(status: string) {
   switch (status.toLowerCase()) {
     case "valid":
-      return t("有效");
+      return t("ip.valid");
     case "invalid":
-      return t("无效");
+      return t("ip.invalid");
     case "notfound":
     case "unknown":
-      return t("未声明 ROA");
+      return t("ip.noRoaPublished");
     default:
-      return t("未知");
+      return t("common.unknown");
   }
 }
 
@@ -118,7 +118,7 @@ function itemName(
   return (
     item.name?.trim() ||
     (item.asn === current ? currentAsnName?.trim() : undefined) ||
-    t("未知")
+    t("common.unknown")
   );
 }
 
@@ -137,14 +137,14 @@ function edgeWidth(share: number) {
 }
 
 function snapshotDate(value?: string | number) {
-  if (!value) return t("当前");
+  if (!value) return t("common.current");
   const timestamp =
     typeof value === "number" && value < 1_000_000_000_000
       ? value * 1000
       : value;
   const date = new Date(timestamp);
   return Number.isNaN(date.getTime())
-    ? t("当前")
+    ? t("common.current")
     : new Intl.DateTimeFormat(undefined, {
         year: "numeric",
         month: "2-digit",
@@ -223,18 +223,18 @@ function RouteTopologyChart({
         className="ip-route-graph-svg"
         viewBox={`0 0 ${GRAPH_WIDTH} ${height}`}
         role="img"
-        aria-label={t("{0} 的 BGP 宣告关系", [
+        aria-label={t("ip.bgpAnnouncementsFor", [
           topology.origins.map((item) => asnLabel(item.asn)).join("、"),
         ])}
       >
         <text x={ORIGIN_X} y="16" className="ip-route-column-label">
-          {t("源 AS")}
+          {t("ip.originAs")}
         </text>
         <text x={DIRECT_X} y="16" className="ip-route-column-label">
-          {t("直接上游 · 路径占比")}
+          {t("ip.directUpstreamPathShare")}
         </text>
         <text x={SECONDARY_X} y="16" className="ip-route-column-label">
-          {t("二级上游 · 蓝框 = Tier 1")}
+          {t("ip.secondLevelUpstreamBlueTier1")}
         </text>
 
         <g className="ip-route-graph-edges" aria-hidden="true">
@@ -355,16 +355,16 @@ function AnnouncementChart({
         className="ip-route-graph-svg"
         viewBox={`0 0 ${GRAPH_WIDTH} ${height}`}
         role="img"
-        aria-label={t("{0} 的 BGP 宣告关系", [displayIp])}
+        aria-label={t("ip.bgpAnnouncementsFor", [displayIp])}
       >
         <text x={ORIGIN_X} y="16" className="ip-route-column-label">
-          {t("查询地址")}
+          {t("ip.queriedIp")}
         </text>
         <text x={DIRECT_X} y="16" className="ip-route-column-label">
-          {t("BGP 前缀")}
+          {t("ip.bgpPrefix")}
         </text>
         <text x={SECONDARY_X} y="16" className="ip-route-column-label">
-          {t("宣告 ASN")}
+          {t("ip.announcingAsn")}
         </text>
         <g className="ip-route-graph-edges" aria-hidden="true">
           <path
@@ -395,7 +395,7 @@ function AnnouncementChart({
           x={ORIGIN_X}
           y={centerY}
           width={ORIGIN_WIDTH}
-          eyebrow={t("查询地址")}
+          eyebrow={t("ip.queriedIp")}
           title={displayIp}
           className="is-origin"
         />
@@ -403,7 +403,7 @@ function AnnouncementChart({
           x={DIRECT_X}
           y={centerY}
           width={DIRECT_WIDTH}
-          eyebrow={t("BGP 前缀")}
+          eyebrow={t("ip.bgpPrefix")}
           title={prefix}
           className="is-prefix"
         />
@@ -413,7 +413,11 @@ function AnnouncementChart({
             x={SECONDARY_X}
             y={columnY(asns.length, index, height)}
             width={SECONDARY_WIDTH}
-            eyebrow={asn === String(currentAsn) ? t("当前 ASN") : t("宣告 ASN")}
+            eyebrow={
+              asn === String(currentAsn)
+                ? t("ip.currentAsn")
+                : t("ip.announcingAsn")
+            }
             title={
               asn === String(currentAsn) && currentAsnName
                 ? `${asnLabel(asn)} · ${currentAsnName}`
@@ -446,7 +450,7 @@ function RouteList({
         <span>
           {itemName(item, currentAsn, currentAsnName)}
           {secondary && item.via?.length ? (
-            <small>{t("经 {0}", [item.via.map(asnLabel).join(" / ")])}</small>
+            <small>{t("ip.via", [item.via.map(asnLabel).join(" / ")])}</small>
           ) : null}
         </span>
       </div>
@@ -460,15 +464,17 @@ function RouteList({
   );
 
   return (
-    <div className="ip-route-graph-list" aria-label={t("路由路径明细")}>
-      <div className="ip-route-list-heading">{t("源 AS")}</div>
+    <div className="ip-route-graph-list" aria-label={t("ip.routePathDetails")}>
+      <div className="ip-route-list-heading">{t("ip.originAs")}</div>
       {topology.origins.map((item) => row(item, false, false))}
-      <div className="ip-route-list-heading">{t("直接上游 · 路径占比")}</div>
+      <div className="ip-route-list-heading">
+        {t("ip.directUpstreamPathShare")}
+      </div>
       {topology.direct.map((item) => row(item))}
       {!!topology.secondary.length && (
         <>
           <div className="ip-route-list-heading">
-            {t("二级上游 · 蓝色 = Tier 1")}
+            {t("ip.secondLevelUpstreamBlueTier1Label")}
           </div>
           {topology.secondary.map((item) => row(item, true))}
         </>
@@ -503,19 +509,21 @@ export default function IpRouteGraph({
   const topology = data?.topology;
   const title = (
     <div className="ip-route-graph-heading">
-      <span className="ip-route-graph-heading-title">{t("BGP 路由拓扑")}</span>
+      <span className="ip-route-graph-heading-title">
+        {t("ip.bgpRouteTopology")}
+      </span>
       <button
         type="button"
         className="ip-route-graph-toggle"
         aria-expanded={expanded}
         onClick={() => setExpanded((value) => !value)}
       >
-        {expanded ? t("收起") : t("展开")}
+        {expanded ? t("common.collapse") : t("common.expand")}
       </button>
       {topology && (
         <span className="ip-route-graph-heading-sub">
           {data?.prefix} · {topology.observedPaths.toLocaleString()}{" "}
-          {t("条观测路径")}
+          {t("ip.observedPaths")}
         </span>
       )}
     </div>
@@ -526,11 +534,11 @@ export default function IpRouteGraph({
       {expanded &&
         (network.isPending ? (
           <div className="ip-route-graph-state">
-            <Pending>{t("正在读取路由数据…")}</Pending>
+            <Pending>{t("ip.readingRoutingData")}</Pending>
           </div>
         ) : network.isError || !data?.routeAvailable || !data.prefix ? (
           <p className="ip-route-graph-state text-muted-foreground">
-            {t("路由数据暂不可用")}
+            {t("ip.routingDataUnavailable")}
           </p>
         ) : topology ? (
           <>
@@ -542,7 +550,9 @@ export default function IpRouteGraph({
                 disabled
               >
                 <span>{snapshotDate(topology.queryTime)}</span>
-                <small>{t("当前 · {0} 上游", [topology.direct.length])}</small>
+                <small>
+                  {t("ip.currentUpstreams", [topology.direct.length])}
+                </small>
               </button>
             </div>
             <RouteTopologyChart
@@ -565,9 +575,7 @@ export default function IpRouteGraph({
               </div>
             )}
             <p className="ip-route-graph-note">
-              {t(
-                "当前快照来自 RIPE RIS；连线粗细 = 观测路径占比，蓝色 = Tier 1 骨干。",
-              )}
+              {t("ip.currentSnapshotComesRipeRisLineWidthShows")}
             </p>
           </>
         ) : (
@@ -581,7 +589,7 @@ export default function IpRouteGraph({
                 </span>
               </div>
               <span className="shrink-0">
-                {asns.length} {t("个宣告 ASN")}
+                {asns.length} {t("ip.announcingAsns")}
               </span>
             </div>
             <AnnouncementChart
@@ -601,9 +609,7 @@ export default function IpRouteGraph({
               </div>
             )}
             <p className="ip-route-graph-note">
-              {t(
-                "当前数据源只返回 BGP 前缀和宣告 ASN，不包含完整 AS Path；图中展示宣告关系，不代表端到端上下游路径。",
-              )}
+              {t("ip.sourceReturnsBgpPrefixAnnouncingAsnsCompletePath")}
             </p>
           </>
         ))}

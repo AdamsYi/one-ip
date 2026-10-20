@@ -8,7 +8,7 @@ export function CountryFlag({ code }: { code?: string }) {
   return (
     <Avatar
       className="country-flag rounded-sm after:hidden"
-      aria-label={country?.toUpperCase() ?? t("未知地区")}
+      aria-label={country?.toUpperCase() ?? t("common.unknownRegion")}
     >
       <AvatarImage
         src={country ? `https://flagcdn.com/w40/${country}.png` : undefined}

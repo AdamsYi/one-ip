@@ -14,9 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UnderlineHover } from "@/components/underline-hover";
 import { useLookupHistory } from "@/hooks/use-lookup-history";
 import { t, locale } from "@/i18n";
-import { endpoint } from "@/lib/network";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft,
@@ -24,22 +24,18 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
+import { lookupSubdomains, type SubdomainsResult } from "./api";
 
 const pageSize = 20;
 
-interface Result {
-  domain: string;
-  source: string;
-  sourceUrl: string;
-  names: string[];
-  checkedAt: string;
-}
 export default function SubdomainsPage() {
   const [params, setParams] = useSearchParams();
   const q = params.get("q") ?? "";
   const [pagination, setPagination] = useState({ query: q, page: 0 });
   const setPage = (page: number) => setPagination({ query: q, page });
-  const history = useLookupHistory<Result>("ip-tools:subdomains-history:v1");
+  const history = useLookupHistory<SubdomainsResult>(
+    "ip-tools:subdomains-history:v1",
+  );
   const cached = history.find(q);
   const query = useQuery({
     queryKey: ["subdomains", q],
@@ -47,10 +43,7 @@ export default function SubdomainsPage() {
     initialData: cached?.data,
     initialDataUpdatedAt: cached?.savedAt,
     queryFn: async ({ signal }) => {
-      const result = await endpoint<Result>(
-        `/subdomains/${encodeURIComponent(q)}`,
-        { signal },
-      );
+      const result = await lookupSubdomains(q, signal);
       history.save(q, result);
       return result;
     },
@@ -70,17 +63,18 @@ export default function SubdomainsPage() {
     <div className="lookup-page text-[13px] leading-relaxed">
       <div className="lookup-search-card">
         <PageHeading
-          title={t("子域名查询")}
-          description={t("查询证书透明度日志中记录的子域名")}
+          title={t("common.subdomainLookup")}
+          description={t("subdomains.description")}
         />
         <LookupForm
           grouped
           value={q}
-          placeholder={t("输入域名，例如 example.com")}
+          placeholder={t("subdomains.enterADomainEGExampleCom")}
           busy={query.isFetching}
           onSubmit={(value) => {
             setPage(0);
-            value === q ? void query.refetch() : setParams({ q: value });
+            if (value === q) void query.refetch();
+            else setParams({ q: value });
           }}
         />
       </div>
@@ -88,7 +82,9 @@ export default function SubdomainsPage() {
         <CardContent>
           <div className="examples lookup-history">
             <span>
-              {history.entries.length ? t("最近查询") : t("推荐查询")}
+              {history.entries.length
+                ? t("common.recentLookups")
+                : t("common.suggestedLookups")}
             </span>
             {(history.entries.length
               ? history.entries.map((entry) => entry.query)
@@ -110,22 +106,20 @@ export default function SubdomainsPage() {
           </div>
           {cached && (
             <p className="small muted">
-              {t("已保存的查询结果 ·")}{" "}
+              {t("common.savedResult")}{" "}
               {new Date(cached.savedAt).toLocaleString(locale)}
-              {t("，点击查询可更新")}
+              {t("common.runTheLookupToUpdate")}
             </p>
           )}
         </CardContent>
       </Card>
       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-        {t(
-          "来源：crt.sh。证书日志不保证覆盖全部子域名，也不代表域名仍在解析或可访问；带 *. 的记录为通配符证书，不是具体主机。",
-        )}
+        {t("subdomains.coverageNotice")}
       </p>
       <ErrorNotice error={query.error} />
       {query.isFetching && (
         <p className="mt-2 text-[13px] text-muted-foreground">
-          <Pending>{t("正在查询证书日志…")}</Pending>
+          <Pending>{t("subdomains.querying")}</Pending>
         </p>
       )}
       {data && (
@@ -134,44 +128,48 @@ export default function SubdomainsPage() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <h2 className="break-all font-medium">{data.domain}</h2>
-                <Badge variant="secondary">{t("共 {0} 条记录", [total])}</Badge>
+                <Badge variant="secondary">
+                  {t("subdomains.records", [total])}
+                </Badge>
               </div>
               {data.names.length > 0 && (
                 <div className="flex items-center gap-1">
-                  <span className="text-xs">{t("复制全部")}</span>
+                  <span className="text-xs">{t("subdomains.copyAll")}</span>
                   <CopyButton value={data.names.join("\n")} />
                 </div>
               )}
             </div>
             <p className="small muted">
               {new Date(data.checkedAt).toLocaleString(locale)} ·{" "}
-              <a
-                href={data.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                crt.sh ↗
-              </a>
+              <UnderlineHover asChild>
+                <a href={data.sourceUrl} target="_blank" rel="noreferrer">
+                  {data.source} ↗
+                </a>
+              </UnderlineHover>
+              {data.limit && (
+                <> · {t("subdomains.sourceLimit", [data.limit])}</>
+              )}
             </p>
             {data.names.length === 0 ? (
               <p className="mt-3 text-[13px] text-muted-foreground">
-                {t("未发现证书记录，不代表没有子域名。")}
+                {t("subdomains.empty")}
               </p>
             ) : (
               <div className="mt-3 overflow-hidden rounded-lg border">
                 <Table
                   className="table-fixed text-[13px]"
-                  aria-label={t("子域名查询")}
+                  aria-label={t("common.subdomainLookup")}
                 >
                   <TableHeader className="bg-muted/50">
                     <TableRow>
                       <TableHead scope="col" className="w-14 text-center">
-                        {t("序号")}
+                        {t("subdomains.no")}
                       </TableHead>
-                      <TableHead scope="col">{t("子域名")}</TableHead>
+                      <TableHead scope="col">
+                        {t("subdomains.subdomain")}
+                      </TableHead>
                       <TableHead scope="col" className="w-12 text-center">
-                        {t("复制")}
+                        {t("common.copy")}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -199,17 +197,17 @@ export default function SubdomainsPage() {
                   className="text-xs tabular-nums text-muted-foreground"
                   role="status"
                 >
-                  {t("显示 {0}–{1} 条，共 {2} 条", [start + 1, end, total])}
+                  {t("subdomains.showingOf", [start + 1, end, total])}
                 </p>
                 <nav
-                  aria-label={t("结果分页")}
+                  aria-label={t("subdomains.resultsPagination")}
                   className="flex items-center justify-between gap-1 sm:justify-end"
                 >
                   <Button
                     variant="outline"
                     size="icon-sm"
                     className="size-9 shrink-0"
-                    aria-label={t("首页")}
+                    aria-label={t("subdomains.firstPage")}
                     disabled={currentPage === 0}
                     onClick={() => setPage(0)}
                   >
@@ -224,12 +222,12 @@ export default function SubdomainsPage() {
                   >
                     <ChevronLeft className="sm:hidden" aria-hidden="true" />
                     <span className="sr-only sm:not-sr-only">
-                      {t("上一页")}
+                      {t("subdomains.previousPage")}
                     </span>
                   </Button>
                   <span
                     className="px-1 text-xs whitespace-nowrap tabular-nums"
-                    aria-label={t("第 {0} 页，共 {1} 页", [
+                    aria-label={t("subdomains.pageOf", [
                       currentPage + 1,
                       pageCount,
                     ])}
@@ -245,14 +243,14 @@ export default function SubdomainsPage() {
                   >
                     <ChevronRight className="sm:hidden" aria-hidden="true" />
                     <span className="sr-only sm:not-sr-only">
-                      {t("下一页")}
+                      {t("subdomains.nextPage")}
                     </span>
                   </Button>
                   <Button
                     variant="outline"
                     size="icon-sm"
                     className="size-9 shrink-0"
-                    aria-label={t("末页")}
+                    aria-label={t("subdomains.lastPage")}
                     disabled={currentPage === pageCount - 1}
                     onClick={() => setPage(pageCount - 1)}
                   >

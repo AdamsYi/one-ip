@@ -5,6 +5,8 @@ import { createRequire } from "node:module";
 import { compile } from "./compile.mjs";
 import { challengeConfig, verifyChallenge } from "../public/worker/challenges.js";
 import { compareExits } from "../src/views/claude/api.ts";
+import { t } from "../src/i18n/index.ts";
+import { localizeApiMessage } from "../src/i18n/api-message.ts";
 
 const require = createRequire(import.meta.url);
 test("optional non-interactive widget uses its own secret and hostname validation", async () => {
@@ -56,7 +58,8 @@ test("configured challenge starts on mount, reports interaction, verifies token 
       useEffect(callback) { effect = callback; },
     };
     if (name === "react/jsx-runtime") return require(name);
-    if (name === "@/i18n") return { t: value => value };
+    if (name === "@/i18n") return { t };
+    if (name === "@/i18n/api-message") return { localizeApiMessage };
     if (name === "@tanstack/react-query") return { useMutation: () => ({ mutateAsync: async input => { request = input; return { success: true, message: "verified" }; } }) };
     return new Proxy({}, { get: (_, key) => key });
   };
@@ -69,11 +72,11 @@ test("configured challenge starts on mount, reports interaction, verifies token 
     assert.ok(options, "render must run without clicking a start button");
     assert.equal(options.retry, "never");
     options["before-interactive-callback"]();
-    assert.ok(states.includes("需要交互"));
+    assert.ok(states.includes(t("challenges.interactionRequired")));
     await options.callback("token");
     assert.equal(request.token, "token");
     assert.equal(request.provider, "turnstile");
-    assert.ok(states.includes("验证通过"));
+    assert.ok(states.includes(t("challenges.verified")));
     cleanup(); cleanup = undefined;
     assert.equal(request.signal.aborted, true);
     assert.equal(removed, true);

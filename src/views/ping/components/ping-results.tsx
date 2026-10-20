@@ -5,7 +5,7 @@ import { DataTable, Pending } from "@/components/toolkit";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { t } from "@/i18n";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import type { PingResponse } from "../api";
 
 const formatLatency = (value: number) => value.toFixed(1);
@@ -23,7 +23,7 @@ interface Row {
 const columns: ColumnDef<Row>[] = [
   {
     accessorKey: "name",
-    header: t("节点"),
+    header: t("ping.node"),
     cell: ({ row }) => (
       <span className="site-cell">
         <CountryFlag code={row.original.country} />
@@ -33,14 +33,14 @@ const columns: ColumnDef<Row>[] = [
   },
   {
     accessorKey: "status",
-    header: t("状态"),
+    header: t("common.status"),
     cell: ({ row }) =>
-      row.original.status === t("测试中...") ? (
-        <Pending>{t("测试中...")}</Pending>
+      row.original.status === t("common.testing") ? (
+        <Pending>{t("common.testing")}</Pending>
       ) : (
         <Badge
           variant={
-            row.original.status === t("失败") ||
+            row.original.status === t("ping.failed") ||
             row.original.avg == null ||
             row.original.avg < 0
               ? "destructive"
@@ -53,7 +53,7 @@ const columns: ColumnDef<Row>[] = [
   },
   ...(["min", "avg", "max"] as const).map((key, i) => ({
     accessorKey: key,
-    header: [t("最小"), t("平均"), t("最大")][i],
+    header: [t("ping.minimum"), t("ping.average"), t("ping.maximum")][i],
     cell: ({ row }: { row: { original: Row } }) =>
       row.original[key] == null ? (
         "—"
@@ -69,7 +69,7 @@ const columns: ColumnDef<Row>[] = [
   })),
   {
     accessorKey: "loss",
-    header: t("丢包"),
+    header: t("common.packetLoss"),
     cell: ({ row }) =>
       row.original.loss == null ? (
         "—"
@@ -95,13 +95,13 @@ export function PingResults({
     status:
       item.result.status === "finished"
         ? item.result.stats?.avg == null || item.result.stats.avg < 0
-          ? t("无响应")
-          : t("完成")
+          ? t("common.noResponse")
+          : t("common.completeLabel")
         : item.result.status === "failed"
-          ? t("失败")
+          ? t("ping.failed")
           : pending
-            ? t("测试中...")
-            : t("未完成"),
+            ? t("common.testing")
+            : t("common.incomplete"),
     ...item.result.stats,
   }));
   rows.sort((a, b) => {
@@ -120,7 +120,7 @@ export function PingResults({
             row.avg == null ||
             !Number.isFinite(row.avg) ||
             row.avg < 0 ||
-            row.status === t("失败")
+            row.status === t("ping.failed")
               ? "ping-row-danger"
               : row.avg < 100
                 ? "ping-row-fast"
@@ -135,7 +135,11 @@ export function PingResults({
           animateSorting
           animateEntries
           empty={
-            pending ? <Pending>{t("等待远端探针...")}</Pending> : t("暂无结果")
+            pending ? (
+              <Pending>{t("ping.waitingForRemoteProbes")}</Pending>
+            ) : (
+              t("common.noResults")
+            )
           }
         />
       </CardContent>

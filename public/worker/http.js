@@ -1,4 +1,5 @@
 import { isIP } from "node:net";
+import { domainToASCII } from "node:url";
 
 export class HttpError extends Error {
   constructor(status, message) {
@@ -16,7 +17,7 @@ export function json(data, status = 200) {
   });
 }
 export function publicIp(value) {
-  if (!isIP(value))
+  if (!isIP(value) || value.includes("%"))
     throw new HttpError(400, "请输入有效的公网 IPv4 或 IPv6 地址");
   const ip =
     isIP(value) === 6
@@ -33,6 +34,7 @@ export function publicIp(value) {
     // Accept global unicast only; reject local, documentation and benchmark ranges.
     if (
       !/^[23]/.test(ip) ||
+      ip.startsWith("2002:") ||
       /^2001:(db8|2|10|20):/.test(ip) ||
       /^2001::/.test(ip)
     )
@@ -46,7 +48,10 @@ export function publicIp(value) {
       a >= 224 ||
       (a === 169 && b === 254) ||
       (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && (b === 168 || b === 0 || (b === 88 && c === 99))) ||
+      (a === 192 &&
+        (b === 168 ||
+          (b === 0 && (c === 0 || c === 2)) ||
+          (b === 88 && c === 99))) ||
       (a === 100 && b >= 64 && b <= 127) ||
       (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) ||
       (a === 203 && b === 0 && c === 113)
@@ -58,10 +63,14 @@ export function publicIp(value) {
 export function target(value) {
   if (typeof value !== "string" || !value || value.length > 253)
     throw new HttpError(400, "请输入有效的域名或 IP");
-  const normalized = value.trim().replace(/\.$/, "").toLowerCase();
-  if (isIP(normalized)) return publicIp(normalized);
+  const hostname = value.trim().replace(/\.$/, "").toLowerCase();
+  if (isIP(hostname)) return publicIp(hostname);
+  if (/[\s/:@%*?#\\]/.test(hostname))
+    throw new HttpError(400, "请输入公网域名，不包含协议、路径或端口");
+  const normalized = domainToASCII(hostname);
   if (
-    !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(
+    normalized.length > 253 ||
+    !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9](?:[a-z0-9-]{0,57}[a-z0-9])?)$/.test(
       normalized,
     ) ||
     /\.(localhost|local|internal|test|invalid|example)$/.test(normalized)
@@ -69,11 +78,7 @@ export function target(value) {
     throw new HttpError(400, "请输入公网域名，不包含协议、路径或端口");
   return normalized;
 }
-export async function boundedJson(
-  response,
-  maxBytes = 2_000_000,
-  errorStatus = 502,
-) {
+async function boundedText(response, maxBytes = 2_000_000, errorStatus = 502) {
   const reader = response.body?.getReader();
   if (!reader) throw new HttpError(errorStatus, "JSON 内容为空");
   let size = 0;
@@ -99,18 +104,33 @@ export async function boundedJson(
     bytes.set(chunk, offset);
     offset += chunk.length;
   }
+  return new TextDecoder().decode(bytes);
+}
+export async function boundedJson(
+  response,
+  maxBytes = 2_000_000,
+  errorStatus = 502,
+) {
+  const text = await boundedText(response, maxBytes, errorStatus);
   try {
-    return JSON.parse(new TextDecoder().decode(bytes));
+    return JSON.parse(text);
   } catch {
     throw new HttpError(errorStatus, "内容不是有效 JSON");
   }
 }
-export async function upstream(url, init = {}, maxBytes = 2_000_000) {
+export async function upstream(
+  url,
+  init = {},
+  maxBytes = 2_000_000,
+  mode = "json",
+) {
   let response;
   try {
     response = await fetch(url, {
       ...init,
-      signal: AbortSignal.timeout(10_000),
+      signal: init.signal
+        ? AbortSignal.any([init.signal, AbortSignal.timeout(10_000)])
+        : AbortSignal.timeout(10_000),
     });
   } catch {
     throw new HttpError(502, "外部数据源连接失败或超时");
@@ -124,7 +144,9 @@ export async function upstream(url, init = {}, maxBytes = 2_000_000) {
         : `外部数据源暂不可用 (${response.status})`,
     );
   }
-  return boundedJson(response, maxBytes);
+  return mode === "text"
+    ? boundedText(response, maxBytes)
+    : boundedJson(response, maxBytes);
 }
 export async function inputJson(request) {
   if (!request.headers.get("Content-Type")?.includes("application/json"))

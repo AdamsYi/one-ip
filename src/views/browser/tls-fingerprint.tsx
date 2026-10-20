@@ -24,28 +24,28 @@ export function TlsFingerprint() {
         busy={query.isFetching}
         onClick={() => void query.refetch()}
       >
-        {t("重新检测")}
+        {t("common.runAgain")}
       </ActionButton>
       {query.isFetching ? (
-        <Pending>{t("检测中…")}</Pending>
+        <Pending>{t("common.checking")}</Pending>
       ) : query.isError ? (
         <p className="mt-2 text-sm text-destructive">
-          {t("TLS 指纹接口请求失败，请重试。")}
+          {t("browser.tlsFingerprintRequestFailedPleaseRetry")}
         </p>
       ) : (
         <>
           <Facts
             rows={[
-              ["JA3", query.data?.ja3 ?? t("平台未提供")],
-              ["JA4", query.data?.ja4 ?? t("平台未提供")],
+              ["JA3", query.data?.ja3 ?? t("browser.notProvidedByPlatform")],
+              ["JA4", query.data?.ja4 ?? t("browser.notProvidedByPlatform")],
               ["TLS", query.data?.tlsVersion ?? "—"],
-              [t("加密套件"), query.data?.tlsCipher ?? "—"],
+              [t("browser.cipherSuite"), query.data?.tlsCipher ?? "—"],
             ]}
           />
           {(!query.data?.ja3 || !query.data?.ja4) && (
             <p className="mt-2 text-xs text-muted-foreground">
               {t(
-                "JA3/JA4 需 Cloudflare Enterprise Bot Management；本地环境或平台未提供字段时无法显示。",
+                "browser.ja3Ja4RequiresCloudflareEnterpriseBotManagementValues",
               )}
             </p>
           )}

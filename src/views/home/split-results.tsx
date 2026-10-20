@@ -10,15 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { UnderlineHover } from "@/components/underline-hover";
 import { t } from "@/i18n";
+import { localizeCatalogItem } from "@/lib/localize-catalog";
 import type { Geo } from "@/lib/types";
 import { useQueries } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { getGeo, inspectSite, type Site } from "./api";
 import { matchesSiteCategory } from "./category-status";
 import { ExitGroups, type SiteFilter } from "./exit-groups";
+import { siteCategoryLabels } from "./site-categories";
 import rawsites from "./sites.json";
 
-const sites = rawsites.map((item) => ({ ...item, name: t(item.name) }));
+const sites = rawsites.map(localizeCatalogItem);
 
 interface Row extends Site {
   onDetail: (name: string) => void;
@@ -28,18 +30,6 @@ interface Row extends Site {
   reachable?: boolean;
   geoPending: boolean;
 }
-
-const categoryLabels: Record<string, string> = {
-  ai: "AI 服务",
-  crypto: "加密货币",
-  ecommerce: "跨境电商",
-  media: "流媒体",
-  social: "社交社区",
-  dev: "开发平台",
-  tools: "实用工具",
-  static: "静态资源",
-  speed: "测速服务",
-};
 
 function SiteEgressTable({
   rows,
@@ -90,14 +80,15 @@ function SiteEgressTable({
         <div className="row-between gap-2">
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <CardTitle>{t("网站访问明细")}</CardTitle>
+              <CardTitle>{t("home.websiteAccessDetails")}</CardTitle>
               <span className="split-table-count">
-                {rows.length} {t("个站点")}
+                {rows.length} {t("home.sites")}
               </span>
             </div>
             {filter && (
               <p className="split-table-filter">
-                {t(filter.kind === "site" ? "网站" : "IP")} · {filter.value}
+                {t(filter.kind === "site" ? "common.website" : "common.ip")} ·{" "}
+                {filter.value}
               </p>
             )}
           </div>
@@ -110,7 +101,7 @@ function SiteEgressTable({
                 className="h-7 px-2 text-xs"
                 onClick={onClearFilter}
               >
-                {t("清除筛选")}
+                {t("home.clearFilter")}
               </Button>
             )}
           </div>
@@ -126,10 +117,10 @@ function SiteEgressTable({
             <table ref={tableRef} id={tableId}>
               <thead>
                 <tr>
-                  <th>{t("网站")}</th>
-                  <th>{t("访问状态")}</th>
-                  <th>{t("IP")}</th>
-                  <th>{t("归属地")}</th>
+                  <th>{t("common.website")}</th>
+                  <th>{t("home.accessStatus")}</th>
+                  <th>{t("common.ip")}</th>
+                  <th>{t("common.location")}</th>
                 </tr>
               </thead>
               <tbody ref={bodyRef}>
@@ -151,12 +142,12 @@ function SiteEgressTable({
                         .join(" · ")
                     : "";
                   const status = row.pending
-                    ? t("检测中…")
+                    ? t("common.checking")
                     : row.reachable === false
-                      ? t("网站访问受阻")
+                      ? t("home.websiteAccessBlockedLabel")
                       : row.reachable === true
-                        ? t("网站可访问")
-                        : t("等待检测");
+                        ? t("home.websiteReachable")
+                        : t("home.waitingToCheck");
                   return (
                     <tr key={row.name} inert={collapsed && index >= 5}>
                       <td>
@@ -176,49 +167,59 @@ function SiteEgressTable({
                                 : "tag-international"
                             }
                           >
-                            {t(row.type === "domestic" ? "国内" : "国际")}
+                            {t(
+                              row.type === "domestic"
+                                ? "categories.domestic"
+                                : "categories.international",
+                            )}
                           </Badge>
                           {row.extra?.map((category) => (
                             <Badge key={category} variant="secondary">
-                              {t(categoryLabels[category] ?? category)}
+                              {siteCategoryLabels[category] ?? category}
                             </Badge>
                           ))}
                         </button>
                       </td>
                       <td>
                         {row.pending ? (
-                          <Pending>{t("检测中…")}</Pending>
+                          <Pending>{t("common.checking")}</Pending>
                         ) : row.reachable === false ? (
                           <span className="text-destructive">
-                            {t("网站访问受阻")}
+                            {t("home.websiteAccessBlockedLabel")}
                           </span>
                         ) : row.reachable === true ? (
                           <span className="text-emerald-700 dark:text-emerald-300">
-                            {t("网站可访问")}
+                            {t("home.websiteReachable")}
                           </span>
                         ) : (
-                          <span className="muted">{t("等待检测")}</span>
+                          <span className="muted">
+                            {t("home.waitingToCheck")}
+                          </span>
                         )}
                       </td>
                       <td>
                         {row.geo ? (
                           <IpText ip={row.geo.ip} />
                         ) : row.reachable === true ? (
-                          <span className="muted">{t("出口不可读")}</span>
+                          <span className="muted">
+                            {t("home.egressUnavailable")}
+                          </span>
                         ) : (
                           "—"
                         )}
                       </td>
                       <td>
                         {row.geoPending ? (
-                          <Pending>{t("查询中…")}</Pending>
+                          <Pending>{t("common.lookingUpEllipsis")}</Pending>
                         ) : location ? (
                           <div className="flex min-w-0 items-center gap-1.5">
                             <CountryFlag code={row.geo?.country_code} />
                             <CompactText text={location} />
                           </div>
                         ) : (
-                          <span className="muted">{t("归属信息暂不可用")}</span>
+                          <span className="muted">
+                            {t("common.locationDetailsAreUnavailable")}
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -248,7 +249,7 @@ function SiteEgressTable({
               ) : (
                 <ChevronDown aria-hidden="true" />
               )}
-              {expanded ? t("收起全部") : t("展开全部")}
+              {expanded ? t("home.collapseAll") : t("home.expandAll")}
             </Button>
           </div>
         )}
@@ -352,18 +353,18 @@ export function SplitResults({ summary = false }: { summary?: boolean }) {
       {summary && (
         <CardHeader>
           <div className="row-between">
-            <CardTitle>{t("网站分流出口")}</CardTitle>
-            {summary && (
+            <CardTitle>{t("home.websiteEgressRouting")}</CardTitle>
+            <UnderlineHover asChild>
               <Link className="small muted" to="/network/connectivity">
-                {t("查看全部 ›")}
+                {t("home.viewAll")}
               </Link>
-            )}
+            </UnderlineHover>
           </div>
         </CardHeader>
       )}
       <Content>
         {summary ? (
-          <div className="grid grid-cols-1 items-start gap-x-4 gap-y-1 sm:grid-cols-2">
+          <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-2">
             {exits.map((geo) => (
               <div
                 key={geo.ip}
@@ -373,29 +374,28 @@ export function SplitResults({ summary = false }: { summary?: boolean }) {
                 <span className="min-w-0 flex-1">
                   <IpText ip={geo.ip} />
                 </span>
-                <UnderlineHover asChild>
-                  <button
-                    type="button"
-                    className="shrink-0 text-muted-foreground"
-                    onClick={() => {
-                      setDetailName(null);
-                      setDetailIp(geo.ip);
-                    }}
-                  >
-                    {rows.filter((row) => row.geo?.ip === geo.ip).length}
-                    {t("个站点")}
-                  </button>
-                </UnderlineHover>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => {
+                    setDetailName(null);
+                    setDetailIp(geo.ip);
+                  }}
+                >
+                  {rows.filter((row) => row.geo?.ip === geo.ip).length}
+                  {t("home.sites")}
+                </Button>
               </div>
             ))}
-            <p className="home-note col-span-full pt-1">
+            <p className="home-note col-span-full">
               {pending ? (
-                <Pending>{t("正在检测分流出口…")}</Pending>
+                <Pending>{t("home.checkingRoutedEgress")}</Pending>
               ) : (
-                t("已读取 {0}/{1} 个站点的出口{2}", [
+                t("home.egressCollectedForSites", [
                   rows.filter((row) => row.geo).length,
                   sites.length,
-                  !exits.length ? t("，暂无可显示结果") : "",
+                  !exits.length ? t("home.noResultsToDisplayYet") : "",
                 ])
               )}
             </p>
@@ -404,10 +404,11 @@ export function SplitResults({ summary = false }: { summary?: boolean }) {
           <>
             <div className="split-results-heading">
               <div className="min-w-0 flex items-baseline gap-2">
-                <h2>{t("网站分流出口")}</h2>
+                <h2>{t("home.websiteEgressRouting")}</h2>
                 {filter && (
                   <span>
-                    {t(filter.kind === "site" ? "网站" : "IP")} · {filter.value}
+                    {t(filter.kind === "site" ? "common.website" : "common.ip")}{" "}
+                    · {filter.value}
                   </span>
                 )}
               </div>
@@ -422,7 +423,7 @@ export function SplitResults({ summary = false }: { summary?: boolean }) {
                   setRound((value) => value + 1);
                 }}
               >
-                {pending ? t("检测中...") : t("重新检测")}
+                {pending ? t("common.checkingDots") : t("common.runAgain")}
               </ActionButton>
             </div>
             <ExitGroups
@@ -452,11 +453,11 @@ export function SplitResults({ summary = false }: { summary?: boolean }) {
             setDetailIp(null);
           }
         }}
-        title={detail?.name ?? t("出口站点")}
+        title={detail?.name ?? t("home.egressSite")}
         description={
           detail
-            ? t("该站点观察到的出口信息。")
-            : t("使用此出口的站点，点击名称查看详情。")
+            ? t("home.egressInformationObservedByThisSite")
+            : t("home.sitesUsingEgressClickNameDetails")
         }
       >
         {detail ? (
@@ -465,26 +466,27 @@ export function SplitResults({ summary = false }: { summary?: boolean }) {
               {detail.domain ?? detail.url ?? detail.name}
             </p>
             <div>
-              {t("出口 IP：")}
+              {t("common.egressIp")}
               {detail.geo?.ip ? (
                 <IpText ip={detail.geo.ip} />
               ) : (
-                t("未读取到出口 IP")
+                t("home.egressIpWasNotReadable")
               )}
             </div>
             <p>
               {[detail.geo?.country, detail.geo?.city, detail.geo?.isp]
                 .filter(Boolean)
-                .join(" · ") || t("归属信息暂不可用")}
+                .join(" · ") || t("common.locationDetailsAreUnavailable")}
             </p>
             <p className="text-muted-foreground">
               {detail.pending
-                ? t("检测中…")
+                ? t("common.checking")
                 : detail.reachable === false
-                  ? t("网站访问受阻")
+                  ? t("home.websiteAccessBlockedLabel")
                   : detail.geo
-                    ? t("已读取出口")
-                    : t(detail.note ?? "网站可访问，但未能读取出口 IP")}
+                    ? t("home.egressCollected")
+                    : (detail.note ??
+                      t("home.websiteReachableButEgressIpWasNotReadable"))}
             </p>
           </div>
         ) : (

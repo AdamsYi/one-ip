@@ -11,24 +11,39 @@ import { BrowserSummary } from "@/views/browser/summary";
 import { ArrowUpRight } from "lucide-react";
 
 const descriptions: Record<string, string> = {
-  "/network/ip": t("查询归属地、运营商、ASN 和地图位置"),
-  "/network/subdomains": t("查询证书透明度日志中记录的子域名"),
-  "/network/whois": t("查看域名、IP 和 AS 注册资料"),
-  "/network/connectivity": t("查看地图、网站分流出口、连通性和访问延迟"),
-  "/network/ping": t("从全球探针测量延迟与丢包"),
-  "/network/dns": t("查看域名解析经过的出口网络"),
-  "/network/cdn": t("查看内容分发网络的接入节点"),
-  "/browser/environment": t("浏览器、系统、语言、屏幕和硬件信息"),
-  "/browser/fingerprint": t("查看指纹组成，比较重复检测的变化"),
-  "/browser/consistency": t("核对环境差异，运行浏览器深度检测"),
-  "/browser/automation": t("查看可观察到的自动化相关信号"),
-  "/browser/privacy": t("检查 WebRTC 出口与网站访问权限"),
-  "/browser/challenges": t("体验第三方验证码并查看本次结果"),
+  "/network/speedtest": t("speedtest.description"),
+  "/network/ip": t("overview.tsx.lookUpLocationIspAsnAndMapPosition"),
+  "/network/subdomains": t("subdomains.description"),
+  "/network/whois": t("overview.tsx.viewDomainIpAndAsRegistrationData"),
+  "/network/connectivity": t(
+    "overview.tsx.viewTheMapWebsiteEgressConnectivityAndLatency",
+  ),
+  "/network/ping": t(
+    "overview.tsx.measureLatencyAndPacketLossFromGlobalProbes",
+  ),
+  "/network/dns": t(
+    "overview.tsx.inspectTheEgressNetworksUsedForDnsResolution",
+  ),
+  "/network/cdn": t("overview.tsx.viewContentDeliveryNetworkServingNodes"),
+  "/browser/environment": t(
+    "overview.tsx.browserOsLanguageScreenAndHardwareInformation",
+  ),
+  "/browser/fingerprint": t(
+    "overview.tsx.inspectFingerprintComponentsAndCompareRepeatedChecks",
+  ),
+  "/browser/consistency": t(
+    "overview.tsx.compareEnvironmentDifferencesAndRunDeepBrowserDiagnostics",
+  ),
+  "/browser/automation": t("overview.tsx.viewObservableAutomationSignals"),
+  "/browser/privacy": t("overview.tsx.checkWebrtcEgressAndWebsitePermissions"),
+  "/browser/challenges": t(
+    "overview.tsx.tryThirdPartyVerificationViewAttemptSResult",
+  ),
 };
 const titles = {
-  network: t("网络检测概述"),
-  browser: t("浏览器检测概述"),
-  ai: t("AI 检测概述"),
+  network: t("overview.tsx.networkChecksOverview"),
+  browser: t("overview.tsx.browserChecksOverview"),
+  ai: t("overview.tsx.aiChecksOverview"),
 };
 export default function ModuleOverview({
   group,
@@ -40,7 +55,7 @@ export default function ModuleOverview({
     <div className="space-y-3">
       <PageHeading title={titles[group]} description="" />
       {group === "network" && (
-        <ToolCard title={t("当前网络响应")}>
+        <ToolCard title={t("overview.tsx.currentNetworkResponse")}>
           <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
             {homeTargets.map((target) => (
               <ConnectivityTile key={target.name} target={target} />
@@ -65,7 +80,10 @@ export default function ModuleOverview({
                 </span>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   {descriptions[tool.path] ??
-                    t("查看 {0} 网络响应、出口对照与相关入口", [tool.label])}
+                    t(
+                      "overview.tsx.viewNetworkResponsesEgressComparisonsAndRelatedLinks",
+                      [tool.label],
+                    )}
                 </p>
               </Link>
             </CardContent>

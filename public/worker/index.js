@@ -1,4 +1,5 @@
 import { getAiStatus } from "./ai-status.js";
+import { cachedJson } from "./cache.js";
 import { challengeConfig, verifyChallenge } from "./challenges.js";
 import { getCloudStatus } from "./cloud-status.js";
 import { cfGeo, geoIp, secondaryGeo } from "./geo.js";
@@ -37,11 +38,15 @@ export default {
       if (!["GET", "POST"].includes(request.method))
         throw new HttpError(405, "不支持此请求方法");
       const key = request.headers.get("CF-Connecting-IP") ?? "local";
+      const path = url.pathname.slice(4).replace(/\/$/, "");
       const limiter =
-        request.method === "POST" ? env.ACTION_LIMITER : env.API_LIMITER;
+        request.method === "POST"
+          ? env.ACTION_LIMITER
+          : path.startsWith("/icons/")
+            ? (env.ICON_LIMITER ?? env.API_LIMITER)
+            : env.API_LIMITER;
       if (limiter && !(await limiter.limit({ key })).success)
         throw new HttpError(429, "请求过于频繁，请一分钟后重试");
-      const path = url.pathname.slice(4).replace(/\/$/, "");
       if (path === "/dns" || path.startsWith("/dns/"))
         throw new HttpError(404, "接口不存在");
       const isAction =
@@ -74,36 +79,47 @@ export default {
       if (path === "/ip/health") return await ipHealth(request, env);
       if (path.startsWith("/ip-type/"))
         return await ipType(decodeURIComponent(path.slice(9)), url.origin);
-      if (path.startsWith("/geoip/"))
-        return json(await geoIp(publicIp(decodeURIComponent(path.slice(7)))));
+      if (path.startsWith("/geoip/")) {
+        const ip = publicIp(decodeURIComponent(path.slice(7)));
+        return await cachedJson(
+          new URL(`/api/geoip/${encodeURIComponent(ip)}`, url.origin),
+          3600,
+          () => geoIp(ip),
+        );
+      }
       if (path.startsWith("/ip/network/"))
         return json(
           await ipNetwork(publicIp(decodeURIComponent(path.slice(12)))),
         );
       if (path.startsWith("/ip/lookup/")) {
         const ip = publicIp(decodeURIComponent(path.slice(11)));
-        const [primary, secondary, registration] = await Promise.allSettled([
-          geoIp(ip),
-          secondaryGeo(ip),
-          lookupRegistration(ip),
-        ]);
-        const sources = [primary, secondary].flatMap((r) =>
-          r.status === "fulfilled" ? [r.value] : [],
+        return await cachedJson(
+          new URL(`/api/ip/lookup/${encodeURIComponent(ip)}`, url.origin),
+          3600,
+          async () => {
+            const [primary, secondary, registration] = await Promise.allSettled(
+              [geoIp(ip), secondaryGeo(ip), lookupRegistration(ip)],
+            );
+            const sources = [primary, secondary].flatMap((r) =>
+              r.status === "fulfilled" ? [r.value] : [],
+            );
+            return {
+              geo: sources[0] ?? { ip },
+              sources,
+              rdap:
+                registration.status === "fulfilled"
+                  ? registration.value.data
+                  : undefined,
+            };
+          },
+          (data) => data.sources.length === 2 && data.rdap !== undefined,
         );
-        return json({
-          geo: sources[0] ?? { ip },
-          sources,
-          rdap:
-            registration.status === "fulfilled"
-              ? registration.value.data
-              : undefined,
-        });
       }
       if (path.startsWith("/subdomains/"))
         return json(await lookupSubdomains(decodeURIComponent(path.slice(12))));
       if (path.startsWith("/whois/lookup/"))
-        return json(
-          await lookupRegistration(decodeURIComponent(path.slice(14))),
+        return await cachedJson(new URL(`/api${path}`, url.origin), 3600, () =>
+          lookupRegistration(decodeURIComponent(path.slice(14))),
         );
       if (path === "/ping/nodes") return json(await pingNodes());
       if (path === "/ping/start")
@@ -118,23 +134,30 @@ export default {
             503,
             "该服务未提供已接入的公开状态接口，请查看官方状态页",
           );
-        const data = await (service.group === "VPS" ||
-        [
-          "aws",
-          "google-cloud",
-          "oracle-cloud",
-          "34",
-          "aliyun",
-          "tencent-cloud",
-          "azure",
-        ].includes(service.id)
-          ? getCloudStatus(service)
-          : getAiStatus(service));
-        return json({
-          ...normalizeStatus(data),
-          fetchedAt: new Date().toISOString(),
-          source: service.url,
-        });
+        return await cachedJson(
+          new URL(`/api/status/${service.id}`, url.origin),
+          60,
+          async () => {
+            const data = await (service.group === "VPS" ||
+            [
+              "aws",
+              "google-cloud",
+              "oracle-cloud",
+              "34",
+              "aliyun",
+              "tencent-cloud",
+              "azure",
+            ].includes(service.id)
+              ? getCloudStatus(service)
+              : getAiStatus(service));
+            return {
+              ...normalizeStatus(data),
+              fetchedAt: new Date().toISOString(),
+              source: service.url,
+            };
+          },
+          (data) => Boolean(data.status?.indicator),
+        );
       }
       throw new HttpError(404, "接口不存在");
     } catch (error) {

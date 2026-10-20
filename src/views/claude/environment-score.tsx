@@ -1,34 +1,94 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { NumberTicker } from "@/components/number-ticker";
-import { ActionButton } from "@/components/toolkit";
+import { ActionButton, IpText, Pending } from "@/components/toolkit";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { t } from "@/i18n";
 import { hideIpAtom } from "@/store/privacy";
-import { useQueries } from "@tanstack/react-query";
+import { getMyIp } from "@/views/home/api";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { gsap } from "gsap";
 import { useAtomValue } from "jotai";
+import { claudeApi } from "./api";
 import { detectSignal, summarizeSignals } from "./score";
 import { SIGNALS } from "../../../vendor/claude-environment/signals";
 
 const labels = [
-  "系统时区",
-  "浏览器语言",
-  "已安装中文字体",
-  "厂商及软件字体",
-  "WebRTC 地址暴露",
-  "浏览器 / WebView 标记",
-  "设备厂商标记",
-  "日期格式区域",
-  "时区偏移",
-  "Emoji 渲染风格",
+  t("claude.signals.timezone"),
+  t("claude.signals.language"),
+  t("claude.signals.chineseFonts"),
+  t("claude.signals.vendorFonts"),
+  t("claude.signals.webrtc"),
+  t("claude.signals.browser"),
+  t("claude.signals.deviceVendor"),
+  t("claude.signals.dateLocale"),
+  t("claude.signals.timezoneOffset"),
+  t("claude.signals.emoji"),
 ];
+
+function countryCode(value?: string) {
+  const code = value?.trim().toUpperCase();
+  return code && /^[A-Z]{2}$/.test(code) && code !== "XX" && code !== "ZZ"
+    ? code
+    : undefined;
+}
 
 export function EnvironmentScore() {
   const content = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const hidden = useAtomValue(hideIpAtom);
+  const exit = useQuery({
+    queryKey: ["claude-domain-exit", "claude.ai"],
+    queryFn: ({ signal }) => claudeApi.exit(signal),
+    retry: false,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const traceCountry = exit.isError
+    ? undefined
+    : countryCode(exit.data?.country_code);
+  const geo = useQuery({
+    queryKey: ["geo", exit.data?.ip],
+    enabled: !!exit.data?.ip && !exit.isError && !traceCountry,
+    queryFn: ({ signal }) => claudeApi.geo(exit.data!.ip, signal),
+    retry: false,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const reference = useQuery({
+    queryKey: ["claude-site-egress"],
+    queryFn: ({ signal }) => getMyIp(signal),
+    retry: false,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const exitCountry = exit.isError
+    ? undefined
+    : (traceCountry ??
+      (geo.isError ? undefined : countryCode(geo.data?.country_code)));
+  const referenceCountry = reference.isError
+    ? undefined
+    : countryCode(reference.data?.country_code);
+  const country = exitCountry ?? referenceCountry;
+  const mainlandExit = country === "CN";
+  const networkBusy =
+    exit.isFetching ||
+    (!exit.isError && !traceCountry && !!exit.data?.ip && geo.isFetching) ||
+    (!exitCountry && reference.isFetching);
+  const egress = exitCountry ? exit.data : reference.data;
+  const egressSource = exitCountry
+    ? "claude.ai"
+    : t("claude.siteEgressReference");
+  const egressDetails = networkBusy ? (
+    <Pending>{t("claude.checkingEgressCountry")}</Pending>
+  ) : country ? (
+    <>
+      {egressSource} · <IpText ip={egress?.ip} /> · {country}
+    </>
+  ) : (
+    t("claude.egressCountryUnknown")
+  );
   const queries = useQueries({
     queries: SIGNALS.map((definition) => ({
       queryKey: ["claude-upstream-signal", definition.id],
@@ -38,15 +98,20 @@ export function EnvironmentScore() {
       refetchOnWindowFocus: false,
     })),
   });
-  const busy = queries.some((query) => query.isFetching);
-  const result = summarizeSignals(
+  const busy = networkBusy || queries.some((query) => query.isFetching);
+  const browserResult = summarizeSignals(
     queries.map((query) =>
       query.isFetching || query.isError ? undefined : query.data,
     ),
   );
-  const completed = queries.filter(
-    (query) => !query.isFetching && !query.isPending,
-  ).length;
+  const result = {
+    ...browserResult,
+    complete: browserResult.complete && !!country && !networkBusy,
+  };
+  const risk = mainlandExit ? "high" : browserResult.band;
+  const completed =
+    queries.filter((query) => !query.isFetching && !query.isPending).length +
+    (networkBusy ? 0 : 1);
   useLayoutEffect(() => {
     if (!content.current) return;
     const media = gsap.matchMedia();
@@ -83,15 +148,18 @@ export function EnvironmentScore() {
         ]
       : [],
   );
-  const band = { low: t("低风险"), medium: t("中风险"), high: t("高风险") }[
-    result.band
-  ];
+  const band = {
+    low: t("claude.lowRisk"),
+    medium: t("claude.mediumRisk"),
+    high: t("claude.highRisk"),
+  }[risk];
   const color = {
     low: "text-emerald-600",
     medium: "text-amber-600",
     high: "text-destructive",
-  }[result.band];
+  }[risk];
   const recommendations = [
+    ...(mainlandExit ? [t("claude.mainlandEgressRecommendation")] : []),
     ...(hits.some(
       ({ definition }) =>
         definition.id === "timezone" ||
@@ -99,42 +167,28 @@ export function EnvironmentScore() {
         definition.id === "language" ||
         definition.id === "intlLocale",
     )
-      ? [t("核对系统时区、浏览器语言和区域格式是否符合实际使用环境。")]
+      ? [t("claude.checkWhetherTimezoneBrowserLanguageRegionalFormatsMatch")]
       : []),
     ...(hits.some(({ definition }) => definition.id === "webrtcLeak")
-      ? [
-          t(
-            "检测到 ICE 地址候选，请在 WebRTC 页面核对公网地址及 UDP 路由；候选地址不一定代表泄露。",
-          ),
-        ]
+      ? [t("claude.iceAddressCandidatesWereDetectedCheckPublicAddresses")]
       : []),
     ...(hits.some(({ definition }) =>
       ["fonts", "vendorFonts", "cnBrowser", "deviceVendor", "emoji"].includes(
         definition.id,
       ),
     )
-      ? [
-          t(
-            "字体、设备和 Emoji 属于弱环境线索，正常系统也可能命中，不建议仅为降低分数修改或删除它们。",
-          ),
-        ]
+      ? [t("claude.fontsDevicesEmojiWeakEnvironmentCluesMatchNormal")]
       : []),
     ...(!result.complete
-      ? [
-          t(
-            "部分检测未完成，请查看日志定位失败项，检查网络或浏览器限制后重试。",
-          ),
-        ]
+      ? [t("claude.someChecksDidCompleteReviewLogsCheckNetwork")]
       : []),
-    t(
-      "结合上方网络卡片确认连通情况；这些环境信号不能确定 Claude 如何识别用户，也不能预测账号状态。",
-    ),
+    t("claude.useNetworkCardsAboveCheckConnectivityTheseSignals"),
   ];
   function renderLogs() {
     return (
       <div
         role="log"
-        aria-label={t("检测日志")}
+        aria-label={t("claude.diagnosticLog")}
         aria-live="polite"
         className="max-h-72 overflow-auto font-mono text-xs leading-6"
       >
@@ -162,20 +216,25 @@ export function EnvironmentScore() {
                       : "shrink-0 text-emerald-600"
                 }
               >
-                [{pending ? t("检测中") : unavailable ? t("未完成") : t("完成")}
+                [
+                {pending
+                  ? t("common.checkingLabel")
+                  : unavailable
+                    ? t("common.incomplete")
+                    : t("common.completeLabel")}
                 ]
               </span>
               <div className="min-w-0 flex-1 break-words">
-                <span>{t(labels[i])}</span>
+                <span>{labels[i]}</span>
                 <span className="text-muted-foreground">
                   {" "}
                   ·{" "}
                   {pending
-                    ? t("等待结果…")
+                    ? t("claude.waitingForResults")
                     : query.isError
-                      ? t("检测失败或超时")
+                      ? t("claude.detectionFailedOrTimedOut")
                       : definition.id === "webrtcLeak" && hidden
-                        ? t("IP 已隐藏")
+                        ? t("claude.ipHidden")
                         : query.data?.raw}
                 </span>
               </div>
@@ -190,6 +249,36 @@ export function EnvironmentScore() {
             </div>
           );
         })}
+        <div className="flex flex-wrap items-start gap-2 py-1">
+          <span className="shrink-0 text-muted-foreground">
+            {String(SIGNALS.length + 1).padStart(2, "0")}
+          </span>
+          <span
+            className={
+              networkBusy
+                ? "text-muted-foreground"
+                : country
+                  ? "text-emerald-600"
+                  : "text-amber-600"
+            }
+          >
+            [
+            {networkBusy
+              ? t("common.checkingLabel")
+              : country
+                ? t("common.completeLabel")
+                : t("common.incomplete")}
+            ]
+          </span>
+          <span>
+            {t("claude.egressCountry")} · {egressDetails}
+          </span>
+          {mainlandExit && !networkBusy && (
+            <span className="text-destructive">
+              {t("claude.mainlandEgressHighRisk")}
+            </span>
+          )}
+        </div>
       </div>
     );
   }
@@ -197,14 +286,19 @@ export function EnvironmentScore() {
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle>{t("Claude 中国用户检测")}</CardTitle>
+          <CardTitle>{t("common.claudeChinaUserCheck")}</CardTitle>
           <ActionButton
             size="sm"
             variant="ghost"
             busy={busy}
-            onClick={() => queries.forEach((query) => void query.refetch())}
+            onClick={() => {
+              queries.forEach((query) => void query.refetch());
+              void exit.refetch();
+              if (exit.data?.ip && !traceCountry) void geo.refetch();
+              void reference.refetch();
+            }}
           >
-            {busy ? t("检测中…") : t("重新检测")}
+            {busy ? t("common.checking") : t("common.runAgain")}
           </ActionButton>
         </div>
       </CardHeader>
@@ -214,6 +308,9 @@ export function EnvironmentScore() {
           aria-live="polite"
         >
           <div className="space-y-2 md:border-r md:pr-5">
+            <p className="text-xs text-muted-foreground">
+              {t("claude.browserSignalScore")}
+            </p>
             <div className="flex items-baseline gap-3">
               <div className={`text-4xl font-medium tabular-nums ${color}`}>
                 <NumberTicker value={result.total} />
@@ -222,15 +319,25 @@ export function EnvironmentScore() {
                 </span>
               </div>
               <span className={`text-sm font-medium ${color}`}>
-                {busy ? t("检测中…") : result.complete ? band : t("检测不完整")}
+                {busy
+                  ? t("common.checking")
+                  : result.complete || mainlandExit
+                    ? band
+                    : t("claude.incompleteDetection")}
               </span>
             </div>
             <p className="text-xs leading-5 text-muted-foreground">
               {busy
-                ? t("正在检测环境特征…")
-                : result.complete
-                  ? t("环境信号评分，非 Claude 官方判定")
-                  : t("当前分数仅包含已完成项目，不作完整风险分档。")}
+                ? t("claude.checkingEnvironmentSignals")
+                : mainlandExit
+                  ? t("claude.mainlandEgressHighRisk")
+                  : result.complete
+                    ? t(
+                        "claude.environmentSignalScoreNotAnOfficialClaudeAssessment",
+                      )
+                    : t(
+                        "claude.partialScoreIncludesCompletedChecksCompleteRiskBand",
+                      )}
             </p>
           </div>
           <div
@@ -242,7 +349,7 @@ export function EnvironmentScore() {
                 key={definition.id}
                 className="flex min-w-0 items-center justify-between gap-3 border-b border-border/50 py-2 text-sm"
               >
-                <span className="text-muted-foreground">{t(labels[i])}</span>
+                <span className="text-muted-foreground">{labels[i]}</span>
                 <span className="shrink-0 font-medium tabular-nums">
                   +{points}
                 </span>
@@ -250,7 +357,7 @@ export function EnvironmentScore() {
             ))}
             {!busy && !hits.length && (
               <span className="text-sm text-muted-foreground">
-                {t("本次无命中信号")}
+                {t("claude.noSignalsMatched")}
               </span>
             )}
             {busy && (
@@ -258,15 +365,21 @@ export function EnvironmentScore() {
                 className="col-span-full text-xs text-muted-foreground"
                 role="status"
               >
-                {t("检测进度：{0}/{1}", [completed, SIGNALS.length])}
+                {t("claude.detectionProgress", [completed, SIGNALS.length + 1])}
               </p>
             )}
           </div>
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-xs">
+          <span className="text-muted-foreground">
+            {t("claude.egressCountry")}
+          </span>
+          <span>{egressDetails}</span>
+        </div>
         <div className="flex items-center justify-between border-t pt-3">
           <details className="min-w-0 flex-1 text-sm">
             <summary className="w-fit cursor-pointer text-muted-foreground hover:text-foreground">
-              {t("建议与检测说明")}
+              {t("claude.suggestionsAndMethodology")}
             </summary>
             <div className="mt-3 space-y-3 pr-3 text-xs leading-6 text-muted-foreground">
               {!busy && (
@@ -277,9 +390,7 @@ export function EnvironmentScore() {
                 </ul>
               )}
               <p>
-                {t(
-                  "采用开源项目的 10 项检测与原始权重。分数为项目启发式规则，不是 Claude 官方判定或封禁概率；Emoji 项使用 UA 推测。",
-                )}
+                {t("claude.usesProjectSTenDetectorsOriginalWeightsHeuristic")}
               </p>
               <a
                 href="https://github.com/LinXiaoTao/FuckClaude"
@@ -287,7 +398,7 @@ export function EnvironmentScore() {
                 rel="noreferrer"
                 className="underline underline-offset-4"
               >
-                {t("检测源码：FuckClaude（MIT）")}
+                {t("claude.detectionSourceFuckclaudeMit")}
               </a>
             </div>
           </details>
@@ -297,14 +408,14 @@ export function EnvironmentScore() {
             className="shrink-0 self-start text-muted-foreground"
             onClick={() => setOpen(true)}
           >
-            {t("查看检测日志")}
+            {t("claude.viewDetectionLogs")}
           </Button>
         </div>
         <ResponsiveDialog
           open={open}
           onOpenChange={setOpen}
-          title={t("检测日志")}
-          description={t("本次检测结果与各项环境信号详情。")}
+          title={t("claude.diagnosticLog")}
+          description={t("claude.resultsAndEnvironmentSignalsFromThisCheck")}
         >
           {renderLogs()}
         </ResponsiveDialog>

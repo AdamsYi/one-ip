@@ -37,6 +37,7 @@ async function egress(
       mode: "cors",
       credentials: "omit",
       cache: "no-store",
+      referrerPolicy: "no-referrer",
       signal: AbortSignal.any([signal, AbortSignal.timeout(3000)]),
     });
     if (!response.ok || new URL(response.url).origin !== origin) return;
@@ -94,6 +95,7 @@ export async function measurePlatforms(
             mode: job.mode,
             credentials: "omit",
             cache: "no-store",
+            referrerPolicy: "no-referrer",
             signal: requestSignal,
           });
           const elapsedMs = Math.round(performance.now() - start);
