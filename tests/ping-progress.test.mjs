@@ -4,8 +4,12 @@ import { test } from "node:test";
 import { compile } from "./compile.mjs";
 import { t } from "../src/i18n/index.ts";
 
-const source = compile(readFileSync("src/views/ping/api.ts", "utf8").replace('import { t } from "@/i18n";', '').replace('import { endpoint } from "@/lib/network";', ''));
-const createRunner = new Function("t", "endpoint", "setTimeout", source.replaceAll("export ", "") + "\nreturn runPing;").bind(null, t);
+const source = compile(readFileSync("src/views/ping/api.ts", "utf8").replace('import { t } from "@/i18n";', '').replace('import { endpoint } from "@/lib/network";', '').replace('import("./verification")', 'loadVerification()'));
+const runnerFactory = new Function("t", "endpoint", "setTimeout", "loadVerification", source.replaceAll("export ", "") + "\nreturn runPing;").bind(null, t);
+const createRunner = (endpoint, timer, getPingVerification = async (signal) => {
+  signal.throwIfAborted();
+  return { provider: "turnstile", token: "test-token" };
+}) => runnerFactory(endpoint, timer, async () => ({ getPingVerification }));
 
 test("Ping publishes intermediate results before completion", async () => {
   const partial = { status: "in-progress", results: [{ result: { status: "finished", stats: { avg: 12 } } }] };
@@ -29,37 +33,60 @@ test("cancelled Ping does not publish stale results", async () => {
     return { status: "finished", results: [] };
   }, (fn) => fn());
   await assert.rejects(() => run({ host: "1.1.1.1", nodes: ["n01"] }, controller.signal, () => assert.fail("stale update")), { name: "AbortError" });
+
+  const verificationController = new AbortController();
+  const cancelVerification = createRunner(() => assert.fail("cancelled verification started a measurement"), (fn) => fn(), async (signal) => {
+    assert.equal(signal, verificationController.signal);
+    verificationController.abort();
+    signal.throwIfAborted();
+  });
+  await assert.rejects(() => cancelVerification({ host: "1.1.1.1", nodes: ["n01"] }, verificationController.signal), { name: "AbortError" });
 });
 
 
 test("custom cities run in sequential batches and preserve earlier results", async () => {
   const requested = [];
   let id = 0;
+  let verifications = 0;
   const run = createRunner(async (path, options) => {
-    if (path === "/ping/start") { requested.push(JSON.parse(options.body).nodes); return { id: String(++id) }; }
+    if (path === "/ping/start") { requested.push(JSON.parse(options.body)); return { id: String(++id) }; }
     return { id: String(id), status: "finished", results: [{ probe: { city: String(id) }, result: { status: "finished" } }] };
-  }, (fn) => fn());
+  }, (fn) => fn(), async (signal) => {
+    signal.throwIfAborted();
+    return { provider: "turnstile", token: `test-token-${++verifications}` };
+  });
   const updates = [];
   const result = await run({ host: "1.1.1.1", nodes: Array.from({ length: 51 }, (_, i) => `city${i}`) }, new AbortController().signal, (value) => updates.push(value));
-  assert.deepEqual(requested.map((batch) => batch.length), [50, 1]);
+  assert.deepEqual(requested.map((batch) => batch.nodes.length), [50, 1]);
+  assert.deepEqual(requested.map((batch) => batch.verification), [
+    { provider: "turnstile", token: "test-token-1" },
+    { provider: "turnstile", token: "test-token-2" },
+  ]);
   assert.equal(updates[0].status, "in-progress");
   assert.equal(result.results.length, 2);
 });
 
 test("completed identical measurements reuse quota regardless of node order", async () => {
   let starts = 0;
+  let verifications = 0;
   const run = createRunner(async (path) => {
     if (path === "/ping/start") { starts++; return { id: "reuse" }; }
     return { id: "reuse", status: "finished", results: [] };
-  }, (fn) => fn());
+  }, (fn) => fn(), async (signal) => {
+    signal.throwIfAborted();
+    return { provider: "turnstile", token: `test-token-${++verifications}` };
+  });
   const signal = new AbortController().signal;
   await run({ host: "example.com", nodes: ["a", "b"] }, signal);
   const cached = await run({ host: "example.com", nodes: ["b", "a"] }, signal);
   assert.equal(starts, 1);
+  assert.equal(verifications, 1);
   assert.equal(typeof cached.reusedAt, "number");
   await run({ host: "example.com", nodes: ["a"] }, signal);
   assert.equal(starts, 2);
+  assert.equal(verifications, 2);
   const controller = new AbortController();
   controller.abort();
   await assert.rejects(() => run({ host: "example.com", nodes: ["a"] }, controller.signal), { name: "AbortError" });
+  assert.equal(verifications, 2);
 });

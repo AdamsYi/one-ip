@@ -39,6 +39,7 @@ test("exit comparisons preserve unknown and normalize equivalent IPv6 addresses"
 test("configured challenge starts on mount, reports interaction, verifies token and cleans up", async () => {
   const source = readFileSync("src/views/browser/challenges.tsx", "utf8").replace("function Challenge(", "export function Challenge(");
   const output = compile(source, { format: "cjs", loader: "tsx" });
+  const widgetOutput = compile(readFileSync("src/lib/challenge-widget.ts", "utf8"), { format: "cjs" });
   const previousDocument = globalThis.document;
   const previousWindow = globalThis.window;
   const states = [];
@@ -51,6 +52,7 @@ test("configured challenge starts on mount, reports interaction, verifies token 
     head: { append(script) { queueMicrotask(() => script.onload()); } },
   };
   const module = { exports: {} };
+  const widgetModule = { exports: {} };
   const mockRequire = name => {
     if (name === "react") return {
       useRef: () => ({ current: host }),
@@ -60,11 +62,13 @@ test("configured challenge starts on mount, reports interaction, verifies token 
     if (name === "react/jsx-runtime") return require(name);
     if (name === "@/i18n") return { t };
     if (name === "@/i18n/api-message") return { localizeApiMessage };
+    if (name === "@/lib/challenge-widget") return widgetModule.exports;
     if (name === "@tanstack/react-query") return { useMutation: () => ({ mutateAsync: async input => { request = input; return { success: true, message: "verified" }; } }) };
     return new Proxy({}, { get: (_, key) => key });
   };
   let cleanup;
   try {
+    new Function("require", "module", widgetOutput)(mockRequire, widgetModule);
     new Function("require", "module", output)(mockRequire, module);
     module.exports.Challenge({ provider: { id: "turnstile", sitekey: "key", configured: true, name: "Turnstile" } });
     cleanup = effect();

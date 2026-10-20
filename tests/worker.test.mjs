@@ -9,9 +9,15 @@ import {
   HttpError,
 } from "../public/worker/http.js";
 import { mapConfig } from "../public/worker/map.js";
+import {
+  mockPingVerification,
+  pingVerification,
+  pingVerificationEnv,
+} from "./ping-verification-fixture.mjs";
 
 const env = {
   APP_ENV: "prod",
+  ...pingVerificationEnv,
   ASSETS: { fetch: async () => new Response("SPA asset") },
   API_LIMITER: { limit: async () => ({ success: true }) },
   ACTION_LIMITER: { limit: async () => ({ success: true }) },
@@ -195,17 +201,21 @@ test("removed DNS endpoints return 404 without querying upstream services", asyn
 test("Ping validates candidates and requests actual ICMP probes", async () => {
   let captured;
   await withFetch(
-    async (url, init) => {
+    mockPingVerification(async (url, init) => {
       assert.equal(url, "https://api.globalping.io/v1/measurements");
       captured = JSON.parse(init.body);
       return Response.json({ id: "measurement-id-123" });
-    },
+    }),
     async () => {
       const response = await worker.fetch(
         request("/api/ping/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ host: "example.com", nodes: ["n03", "n04"] }),
+          body: JSON.stringify({
+            host: "example.com",
+            nodes: ["n03", "n04"],
+            verification: pingVerification,
+          }),
         }),
         env,
       );
@@ -220,7 +230,11 @@ test("Ping validates candidates and requests actual ICMP probes", async () => {
         request("/api/ping/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: '{"host":"example.com","nodes":["bad"]}',
+          body: JSON.stringify({
+            host: "example.com",
+            nodes: ["bad"],
+            verification: pingVerification,
+          }),
         }),
         env,
       );
@@ -306,13 +320,14 @@ test("Ping catalog lists all online cities and aggregates probe counts", async (
   });
 });
 test("Ping accepts only catalog locations for dynamic selection", async () => {
-  await withFetch(async (url, init) => {
+  await withFetch(mockPingVerification(async (url, init) => {
     if (url.endsWith("/probes")) return Response.json([{ location: { country: "NZ", city: "Auckland" } }]);
+    assert.equal(url, "https://api.globalping.io/v1/measurements");
     const payload = JSON.parse(init.body);
     assert.deepEqual(payload.locations, [{ country: "NZ", city: "Auckland", limit: 1 }]);
     return Response.json({ id: "measurement-test" });
-  }, async () => {
-    const makeRequest = (id) => request("/api/ping/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: "1.1.1.1", nodes: [id] }) });
+  }), async () => {
+    const makeRequest = (id) => request("/api/ping/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: "1.1.1.1", nodes: [id], verification: pingVerification }) });
     assert.equal((await worker.fetch(makeRequest("NZ:Auckland"), env)).status, 200);
     assert.equal((await worker.fetch(makeRequest("NZ:Unknown"), env)).status, 400);
   });
@@ -320,32 +335,34 @@ test("Ping accepts only catalog locations for dynamic selection", async () => {
 
 
 test("regional Ping requests spread probes across continents without conflicting limits", async () => {
-  await withFetch(async (url, init) => {
+  await withFetch(mockPingVerification(async (url, init) => {
+    assert.equal(url, "https://api.globalping.io/v1/measurements");
     const body = JSON.parse(init.body);
     assert.deepEqual(body.locations, [ { continent: "AS", limit: 3 }, { continent: "EU", limit: 3 } ]);
     assert.equal(body.limit, undefined);
     assert.equal(body.inProgressUpdates, true);
     return Response.json({ id: "regional-test" });
-  }, async () => {
-    const response = await worker.fetch(request("/api/ping/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: "1.1.1.1", regions: ["AS", "EU"], perRegion: 3 }) }), env);
+  }), async () => {
+    const response = await worker.fetch(request("/api/ping/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: "1.1.1.1", regions: ["AS", "EU"], perRegion: 3, verification: pingVerification }) }), env);
     assert.equal(response.status, 200);
-    const invalid = await worker.fetch(request("/api/ping/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: "1.1.1.1", regions: ["AS", "EU"], perRegion: 30 }) }), env);
+    const invalid = await worker.fetch(request("/api/ping/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: "1.1.1.1", regions: ["AS", "EU"], perRegion: 30, verification: pingVerification }) }), env);
     assert.equal(invalid.status, 400);
   });
 });
 
 test("preferred Ping pins the online major provider ASN while custom mode keeps city selection", async () => {
-  await withFetch(async (url, init) => {
+  await withFetch(mockPingVerification(async (url, init) => {
     if (url.endsWith("/probes")) return Response.json([
       { location: { country: "US", city: "Seattle", asn: 123, network: "Small ISP" } },
       { location: { country: "US", city: "Seattle", asn: 16509, network: "Amazon.com, Inc." } },
     ]);
+    assert.equal(url, "https://api.globalping.io/v1/measurements");
     const body = JSON.parse(init.body);
     assert.equal(body.locations[0].asn, 16509);
     assert.equal(body.locations[0].city, "Seattle");
     return Response.json({ id: "preferred-test" });
-  }, async () => {
-    const response = await worker.fetch(request("/api/ping/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: "1.1.1.1", nodes: ["US:Seattle"], preferred: true }) }), env);
+  }), async () => {
+    const response = await worker.fetch(request("/api/ping/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ host: "1.1.1.1", nodes: ["US:Seattle"], preferred: true, verification: pingVerification }) }), env);
     assert.equal(response.status, 200);
   });
 });
