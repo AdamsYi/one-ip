@@ -207,6 +207,16 @@ test("Ping validates candidates and requests actual ICMP probes", async () => {
       return Response.json({ id: "measurement-id-123" });
     }),
     async () => {
+      const unverified = await worker.fetch(
+        request("/api/ping/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ host: "example.com", nodes: ["n03", "n04"] }),
+        }),
+        env,
+      );
+      assert.equal(unverified.status, 403);
+      assert.equal(captured, undefined);
       const response = await worker.fetch(
         request("/api/ping/start", {
           method: "POST",

@@ -14,6 +14,7 @@ export function mockPingVerification(fetchUpstream) {
   return async (url, options) => {
     if (url !== "https://challenges.cloudflare.com/turnstile/v0/siteverify")
       return fetchUpstream(url, options);
+    assert.equal(url, "https://challenges.cloudflare.com/turnstile/v0/siteverify");
     assert.equal(options.method, "POST");
     assert.ok(options.body instanceof URLSearchParams);
     assert.deepEqual(Object.fromEntries(options.body), {
