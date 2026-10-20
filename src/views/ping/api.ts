@@ -32,10 +32,12 @@ async function runBatch(
   signal: AbortSignal,
   onProgress?: (data: PingResponse) => void,
 ) {
+  const { getPingVerification } = await import("./verification");
+  const verification = await getPingVerification(signal);
   const created = await endpoint<{ id: string }>("/ping/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, verification }),
     signal,
   });
   for (let i = 0; i < 12; i++) {

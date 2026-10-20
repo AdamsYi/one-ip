@@ -12,9 +12,9 @@ import { mapConfig } from "./map.js";
 import { startPing, pingResult, pingNodes } from "./ping.js";
 import { normalizeStatus } from "./service-status.js";
 import services from "./services.json";
-import { lookupSubdomains } from "./subdomains.js";
+import { lookupSubdomains, subdomainTarget } from "./subdomains.js";
 import { tlsFingerprint } from "./tls-fingerprint.js";
-import { lookupRegistration } from "./whois.js";
+import { lookupRegistration, registrationTarget } from "./whois.js";
 
 /** @type {ExportedHandler<Env>} */
 export default {
@@ -87,10 +87,18 @@ export default {
           () => geoIp(ip),
         );
       }
-      if (path.startsWith("/ip/network/"))
-        return json(
-          await ipNetwork(publicIp(decodeURIComponent(path.slice(12)))),
+      if (path.startsWith("/ip/network/")) {
+        const ip = publicIp(decodeURIComponent(path.slice(12)));
+        return await cachedJson(
+          new URL(`/api/ip/network/${encodeURIComponent(ip)}`, url.origin),
+          300,
+          () => ipNetwork(ip),
+          (data) =>
+            data.routeAvailable &&
+            data.ptrAvailable &&
+            data.validations.every((item) => item.status !== "unavailable"),
         );
+      }
       if (path.startsWith("/ip/lookup/")) {
         const ip = publicIp(decodeURIComponent(path.slice(11)));
         return await cachedJson(
@@ -115,15 +123,48 @@ export default {
           (data) => data.sources.length === 2 && data.rdap !== undefined,
         );
       }
-      if (path.startsWith("/subdomains/"))
-        return json(await lookupSubdomains(decodeURIComponent(path.slice(12))));
-      if (path.startsWith("/whois/lookup/"))
-        return await cachedJson(new URL(`/api${path}`, url.origin), 3600, () =>
-          lookupRegistration(decodeURIComponent(path.slice(14))),
+      if (path.startsWith("/subdomains/")) {
+        const domain = subdomainTarget(decodeURIComponent(path.slice(12)));
+        return await cachedJson(
+          new URL(`/api/subdomains/${encodeURIComponent(domain)}`, url.origin),
+          300,
+          () => lookupSubdomains(domain),
         );
-      if (path === "/ping/nodes") return json(await pingNodes());
-      if (path === "/ping/start")
-        return json(await startPing(await inputJson(request)));
+      }
+      if (path.startsWith("/whois/lookup/")) {
+        const query = registrationTarget(decodeURIComponent(path.slice(14)));
+        return await cachedJson(
+          new URL(`/api/whois/lookup/${encodeURIComponent(query)}`, url.origin),
+          3600,
+          () => lookupRegistration(query),
+        );
+      }
+      if (path === "/ping/nodes")
+        return await cachedJson(
+          new URL("/api/ping/nodes", url.origin),
+          300,
+          pingNodes,
+          (data) => data.length > 0,
+        );
+      if (path === "/ping/start") {
+        const input = await inputJson(request);
+        if (
+          !["turnstile", "turnstile-noninteractive"].includes(
+            input.verification?.provider,
+          )
+        )
+          throw new HttpError(403, "验证凭证无效，请重新验证");
+        const verification = await verifyChallenge(
+          input.verification,
+          env,
+          url.hostname,
+          "ping_start",
+          request.headers.get("CF-Connecting-IP") ?? undefined,
+        );
+        if (!verification.success)
+          throw new HttpError(403, verification.message);
+        return json(await startPing(input));
+      }
       if (path.startsWith("/ping/result/"))
         return json(await pingResult(path.slice(13)));
       if (path.startsWith("/status/")) {

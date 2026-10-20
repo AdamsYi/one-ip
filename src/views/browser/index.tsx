@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CompactText } from "@/components/compact-text";
+import { DataTable } from "@/components/data-table";
 import {
-  DataTable,
   Facts,
   ToolCard,
   PageHeading,
@@ -23,7 +23,6 @@ import { useQuery } from "@tanstack/react-query";
 import type { LegacyColumnDef as ColumnDef } from "@tanstack/react-table/legacy";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import type { FingerprintAlgorithm } from "./collect";
 import { consistencyChecks, automationChecks, fingerprint } from "./collect";
 import type { Check } from "./consistency";
 import { DeepPanel } from "./deep-panel";
@@ -68,9 +67,7 @@ const titles: Record<string, string> = {
   privacy: t("common.permissionsPrivacy"),
 };
 function FingerprintPanel() {
-  const [algorithm, setAlgorithm] = useState<FingerprintAlgorithm | "tls">(
-    "modern",
-  );
+  const [algorithm, setAlgorithm] = useState<"modern" | "tls">("modern");
   return (
     <>
       <div className="mb-3 flex justify-end">
@@ -78,11 +75,7 @@ function FingerprintPanel() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
               {t("browser.algorithm")}：
-              {algorithm === "modern"
-                ? "FingerprintJS (5.3.0)"
-                : algorithm === "tls"
-                  ? "JA3/JA4"
-                  : t("browser.fingerprintjs2Legacy")}
+              {algorithm === "modern" ? "FingerprintJS (5.3.0)" : "JA3/JA4"}
               <ChevronDown aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
@@ -90,15 +83,11 @@ function FingerprintPanel() {
             <DropdownMenuRadioGroup
               value={algorithm}
               onValueChange={(value) => {
-                if (value === "modern" || value === "legacy" || value === "tls")
-                  setAlgorithm(value);
+                if (value === "modern" || value === "tls") setAlgorithm(value);
               }}
             >
               <DropdownMenuRadioItem value="modern">
                 FingerprintJS (5.3.0)
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="legacy">
-                {t("browser.fingerprintjs2Legacy")}
               </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="tls">
                 JA3/JA4 Fingerprint
@@ -107,19 +96,11 @@ function FingerprintPanel() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {algorithm === "tls" ? (
-        <TlsFingerprint />
-      ) : (
-        <FingerprintResults key={algorithm} algorithm={algorithm} />
-      )}
+      {algorithm === "tls" ? <TlsFingerprint /> : <FingerprintResults />}
     </>
   );
 }
-function FingerprintResults({
-  algorithm,
-}: {
-  algorithm: FingerprintAlgorithm;
-}) {
+function FingerprintResults() {
   const [result, setResult] =
     useState<Awaited<ReturnType<typeof fingerprint>>>();
   const [previous, setPrevious] = useState<typeof result>();
@@ -131,7 +112,7 @@ function FingerprintResults({
   const initialRun = useRef<ReturnType<typeof fingerprint> | null>(null);
   useEffect(() => {
     let active = true;
-    initialRun.current ??= fingerprint(algorithm);
+    initialRun.current ??= fingerprint();
     void initialRun.current.then(
       (next) => {
         if (active) {
@@ -155,12 +136,12 @@ function FingerprintResults({
     return () => {
       active = false;
     };
-  }, [algorithm]);
+  }, []);
   async function run() {
     setBusy(true);
     setError(undefined);
     try {
-      const next = await withDetectionAnimation(() => fingerprint(algorithm));
+      const next = await withDetectionAnimation(() => fingerprint());
       setPrevious(result);
       setResult(next);
       toast.success(t("browser.fingerprintCheckComplete"));

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { AnimatedValue } from "@/components/animated-value";
 import { CountryFlag } from "@/components/country-flag";
+import { DataTable } from "@/components/data-table";
 import { LookupFaq } from "@/components/lookup-faq";
 import {
   ActionButton,
   ErrorNotice,
-  DataTable,
   IpText,
   Pending,
 } from "@/components/toolkit";

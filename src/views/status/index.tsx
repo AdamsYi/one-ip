@@ -1,13 +1,9 @@
 import { useSearchParams } from "react-router-dom";
 import { AnimatedValue } from "@/components/animated-value";
+import { DataTable } from "@/components/data-table";
 import { NumberTicker } from "@/components/number-ticker";
 import { SiteLogo } from "@/components/site-logo";
-import {
-  PageHeading,
-  Pending,
-  ToolCard,
-  DataTable,
-} from "@/components/toolkit";
+import { PageHeading, Pending, ToolCard } from "@/components/toolkit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

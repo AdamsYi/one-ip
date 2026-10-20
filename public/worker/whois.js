@@ -1,27 +1,35 @@
 import { isIP } from "node:net";
 import { HttpError, publicIp, target, upstream } from "./http.js";
 
-export async function lookupRegistration(query) {
+export function registrationTarget(query) {
   const raw = query.trim();
-  let path;
-  let endpoint;
   if (/^AS\d+$/i.test(raw)) {
     const asn = Number(raw.slice(2));
     if (!Number.isSafeInteger(asn) || asn < 1 || asn > 4294967295)
       throw new HttpError(400, "无效的 AS 号");
-    path = `autnum/${asn}`;
-  } else if (isIP(raw)) path = `ip/${encodeURIComponent(publicIp(raw))}`;
+    return `AS${asn}`;
+  }
+  if (isIP(raw)) return publicIp(raw);
+  let ascii;
+  try {
+    ascii = new URL(`https://${raw}`).hostname;
+  } catch {
+    throw new HttpError(400, "请输入有效的域名、IP 或 AS 号");
+  }
+  // Reject paths/userinfo instead of silently querying a different resource.
+  if (/[\s/@?#:]/.test(raw))
+    throw new HttpError(400, "仅输入域名，不包含路径或协议");
+  return target(ascii);
+}
+
+export async function lookupRegistration(query) {
+  const raw = registrationTarget(query);
+  let path;
+  let endpoint;
+  if (/^AS\d+$/.test(raw)) path = `autnum/${raw.slice(2)}`;
+  else if (isIP(raw)) path = `ip/${encodeURIComponent(raw)}`;
   else {
-    let ascii;
-    try {
-      ascii = new URL(`https://${raw}`).hostname;
-    } catch {
-      throw new HttpError(400, "请输入有效的域名、IP 或 AS 号");
-    }
-    // Reject paths/userinfo instead of silently querying a different resource.
-    if (/[\s/@?#:]/.test(raw))
-      throw new HttpError(400, "仅输入域名，不包含路径或协议");
-    const domain = target(ascii);
+    const domain = raw;
     path = `domain/${encodeURIComponent(domain)}`;
     const bootstrap = await upstream("https://data.iana.org/rdap/dns.json", {
       cf: { cacheTtl: 86400, cacheEverything: true },

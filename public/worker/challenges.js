@@ -62,7 +62,13 @@ export function challengeConfig(env, hostname) {
       };
     });
 }
-export async function verifyChallenge(body, env, hostname) {
+export async function verifyChallenge(
+  body,
+  env,
+  hostname,
+  action = "browser_check",
+  remoteIp,
+) {
   if (!body || typeof body.provider !== "string")
     throw new HttpError(400, "请选择验证服务");
   const config = settings(env, body.provider);
@@ -83,6 +89,7 @@ export async function verifyChallenge(body, env, hostname) {
         body: new URLSearchParams({
           secret: config.secret,
           response: body.token,
+          ...(remoteIp ? { remoteip: remoteIp } : {}),
         }),
       },
       32_000,
@@ -97,7 +104,7 @@ export async function verifyChallenge(body, env, hostname) {
     !config.hostnames.includes(result.hostname)
   )
     return { success: false, message: "验证站点不匹配，请重新验证。" };
-  if (result.action !== "browser_check")
+  if (result.action !== action)
     return { success: false, message: "验证场景不匹配，请重新验证。" };
   if (body.provider === "recaptcha") {
     if (

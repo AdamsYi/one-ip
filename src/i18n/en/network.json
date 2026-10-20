@@ -42,6 +42,7 @@
   "link.slow": "Slow",
   "link.medianBrowserHttpRequestTimeAcrossSuccessfulRequests": "Median browser HTTP request time across successful requests in 8 rounds, not ICMP Ping. Cross-origin restrictions or timeouts may produce unknown results.",
   "ping.stopped": "Stopped",
+  "ping.verifyBeforeMeasurement": "Complete human verification to start this measurement.",
   "ping.someNodesHaveFinishedViewReturnedResultsTest": "Some nodes have not finished. View returned results or test again.",
   "ping.selectAtLeastOneRegion": "Select at least one region",
   "ping.node": "Node",

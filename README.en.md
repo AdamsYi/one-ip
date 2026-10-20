@@ -162,7 +162,7 @@ pnpm deploy
 
 ## Verification (optional)
 
-Choose Turnstile or reCAPTCHA and provide a Site Key, Secret and allowed hostname. The verification entry appears when the configuration is complete and the hostname matches. Missing configuration keeps the entry hidden.
+Choose Turnstile or reCAPTCHA and provide a Site Key, Secret and allowed hostname. The verification entry appears when the configuration is complete and the hostname matches. Missing configuration keeps the entry hidden. New Ping measurements require configured Turnstile (managed or Non-interactive), alongside the existing five-request-per-minute limit. Each batch uses a fresh token; the server validates its `ping_start` action, hostname and validity, and rejects measurements when verification is unconfigured. WebMCP calls also show the verification dialog.
 
 | Provider     | Settings                                                        |
 | ------------ | --------------------------------------------------------------- |
@@ -189,6 +189,7 @@ Data sources differ by edition: the open-source edition uses publicly accessible
 - `src/app.css`: interface styles; `src/components/ui`: shadcn/ui components.
 - `src/views`: network, browser, AI and status pages; `public/worker`: Worker APIs.
 - Net.Coffee: IP details. Available fields depend on the API response.
+- Supplemental IP classification calls the free ip-api HTTP endpoint from the Worker, without an API key, and retains caching and rate-limit backoff. See the [official documentation](https://ip-api.com/docs/api:json) for its permitted scope of use.
 - Globalping: global measurements; IANA / RDAP: registration records; official platform status feeds: service status.
 - FingerprintJS and CreepJS: browser checks. See [vendor/browser-diagnostics](vendor/browser-diagnostics/README.md) for module details.
 

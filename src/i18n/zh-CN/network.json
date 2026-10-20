@@ -42,6 +42,7 @@
   "link.slow": "慢",
   "link.medianBrowserHttpRequestTimeAcrossSuccessfulRequests": "浏览器 HTTP 请求耗时，取 8 轮成功请求的中位数，非 ICMP Ping。跨域限制或超时可能导致未知结果。",
   "ping.stopped": "已停止",
+  "ping.verifyBeforeMeasurement": "请完成人机校验后开始本次探测。",
   "ping.someNodesHaveFinishedViewReturnedResultsTest": "部分节点尚未完成，可查看已返回结果或重新测试。",
   "ping.selectAtLeastOneRegion": "请选择至少一个地区",
   "ping.node": "节点",

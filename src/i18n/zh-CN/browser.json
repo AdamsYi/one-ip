@@ -293,7 +293,6 @@
   "browser.results.thisModuleDidNotFlagDifferencesLabel": " 本模块未标记差异。",
   "browser.results.noExplicitDifferenceAssessmentProvidedLabel": " 未提供明确的差异判定。",
   "browser.algorithm": "算法",
-  "browser.fingerprintjs2Legacy": "FingerprintJS2（旧版）",
   "browser.ja3Ja4RequiresServerSideTlsFingerprintEndpoint": "JA3/JA4 需要服务端 TLS 指纹接口，当前未接入。",
   "browser.notProvidedByPlatform": "平台未提供",
   "browser.cipherSuite": "加密套件",

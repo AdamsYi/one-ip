@@ -293,7 +293,6 @@
   "browser.results.thisModuleDidNotFlagDifferencesLabel": " This module did not flag differences.",
   "browser.results.noExplicitDifferenceAssessmentProvidedLabel": " No explicit difference assessment provided.",
   "browser.algorithm": "Algorithm",
-  "browser.fingerprintjs2Legacy": "FingerprintJS2 (legacy)",
   "browser.ja3Ja4RequiresServerSideTlsFingerprintEndpoint": "JA3/JA4 requires a server-side TLS fingerprint endpoint, which is not connected yet.",
   "browser.notProvidedByPlatform": "Not provided by platform",
   "browser.cipherSuite": "Cipher suite",

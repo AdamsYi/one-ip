@@ -166,7 +166,7 @@ pnpm deploy
 
 ## 验证体验（可选）
 
-选择 Turnstile 或 reCAPTCHA，填写 Site Key、Secret 和允许访问的域名。配置齐全且访问域名匹配时，页面显示“验证体验”入口；缺少配置时隐藏入口。
+选择 Turnstile 或 reCAPTCHA，填写 Site Key、Secret 和允许访问的域名。配置齐全且访问域名匹配时，页面显示“验证体验”入口；缺少配置时隐藏入口。发起新的 Ping 测量必须配置 Turnstile（普通或 Non-interactive），保留每分钟 5 次限流；每个批次使用独立 token，服务端校验 `ping_start` action、hostname 和凭证有效性，未配置时拒绝发起测量。WebMCP 调用同样需要完成弹出的人机校验。
 
 | 提供商       | 配置项                                                          |
 | ------------ | --------------------------------------------------------------- |
@@ -193,6 +193,7 @@ reCAPTCHA 使用 v3 评分型密钥。服务端校验 hostname、`browser_check`
 - `src/app.css`：界面样式；`src/components/ui`：shadcn/ui 组件。
 - `src/views`：网络、浏览器、AI 与状态页面；`public/worker`：Worker API。
 - Net.Coffee：IP 详情，展示字段取决于接口返回。
+- IP 类型补充查询由 Worker 服务端调用 ip-api 免费 HTTP 接口，无需 API Key，保留缓存与限流退避；接口使用范围见[官方说明](https://ip-api.com/docs/api:json)。
 - Globalping：全球测量；IANA / RDAP：注册资料；各平台官方状态源：运行状态。
 - FingerprintJS 与 CreepJS：浏览器检测，模块说明见 [vendor/browser-diagnostics](vendor/browser-diagnostics/README.md)。
 
