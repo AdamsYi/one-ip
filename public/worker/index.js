@@ -103,9 +103,11 @@ export default {
       if (path.startsWith("/ip/quality/")) {
         const ip = publicIp(decodeURIComponent(path.slice(12)));
         return await cachedJson(
-          new URL(`/api/ip/quality/${encodeURIComponent(ip)}`, url.origin),
+          // The path-embedded version busts edge-cache entries from older
+          // response shapes; cachedJson strips query strings from cache keys.
+          new URL(`/api/ip/quality/v2/${encodeURIComponent(ip)}`, url.origin),
           21600,
-          () => ipQuality(ip, env),
+          () => ipQuality(ip, env, url.origin),
           (data) => data.sources_ok >= 2,
         );
       }

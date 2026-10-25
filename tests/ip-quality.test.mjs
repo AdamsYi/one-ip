@@ -66,6 +66,14 @@ test("computeTrust takes the strongest penalty, adds extras and caps at 100", ()
     null,
   );
   assert.equal(computeTrust({ riskSources: 0 }).confidence, "low");
+  assert.equal(
+    computeTrust({ riskSources: 0, typeOnly: true, hosting: true }).trust_score,
+    85,
+  );
+  assert.equal(
+    computeTrust({ riskSources: 0, typeOnly: true, hosting: true }).confidence,
+    "low",
+  );
   assert.equal(computeTrust({ riskSources: 1 }).confidence, "medium");
 });
 
@@ -232,7 +240,8 @@ test("ipQuality aggregates every source into a CoffeeIp-compatible result", asyn
   assert.equal(data.source_detail.proxycheck.state, "ok");
   assert.equal(data.source_detail.abuseipdb.state, "ok");
   assert.equal(data.source_detail.cymru.state, "ok");
-  assert.equal(data.source_detail.ipwho_is.state, "ok");
+  assert.equal(data.source_detail.geo.state, "ok");
+  assert.equal(data.source_detail.geo.source, "ipwho.is");
   const labels = data.intelligence.threats.map((threat) => threat.label);
   assert.ok(labels.includes("数据中心 IP"));
   assert.ok(labels.includes("注册国与定位国不一致"));
@@ -247,15 +256,45 @@ test("ipQuality degrades when a keyed source fails and skips sources without key
   const data = await ipQuality("95.169.12.201", allKeys);
   assert.equal(data.sources_ok, 4);
   assert.equal(data.source_detail.abuseipdb.state, "unavailable");
+  assert.equal(data.source_detail.ip_api_fallback.state, "skipped");
   assert.equal(data.trust_score, 80);
 
   t.mock.method(globalThis, "fetch", sourceRouter());
   const keyless = await ipQuality("95.169.12.201", {});
   assert.equal(keyless.sources_ok, 2);
   assert.equal(keyless.source_detail.ipapi_is.state, "skipped");
+  assert.equal(keyless.source_detail.ip_api_fallback.state, "unavailable");
   assert.equal(keyless.trust_score, null);
   assert.equal(keyless.confidence, "low");
   assert.equal(keyless.is_datacenter, undefined);
+});
+
+test("ipQuality falls back to ip-api type classification without keys", async (t) => {
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async (url) => {
+      url = String(url);
+      if (url.startsWith("http://ip-api.com/"))
+        return Response.json({
+          status: "success",
+          query: "95.169.12.201",
+          hosting: true,
+          mobile: false,
+          proxy: true,
+        });
+      return sourceRouter()(url);
+    },
+  );
+  const data = await ipQuality("95.169.12.201", {});
+  assert.equal(data.source_detail.ip_api_fallback.state, "ok");
+  assert.equal(data.is_datacenter, true);
+  assert.equal(data.is_proxy, undefined);
+  assert.equal(data.company_type, "hosting");
+  assert.equal(data.confidence, "low");
+  // type-only risk 15 + registered/geo mismatch 5
+  assert.equal(data.trust_score, 80);
+  assert.equal(data.sources_ok, 3);
 });
 
 test("ipQuality refuses to score anycast public services", async (t) => {

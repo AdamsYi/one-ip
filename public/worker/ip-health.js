@@ -16,7 +16,7 @@ export async function ipHealth(request, env) {
       "无法获取真实访客 IP，请指定 ip 参数或部署 Worker 后检测",
     );
   const ip = publicIp(target ?? request.headers.get("CF-Connecting-IP"));
-  const data = await ipQuality(ip, env);
+  const data = await ipQuality(ip, env, new URL(request.url).origin);
   if (!data.sources_ok)
     throw new HttpError(502, "IP 数据源暂不可用，请稍后重试");
   const score =

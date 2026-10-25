@@ -1,10 +1,12 @@
-import { geoIp } from "./geo.js";
+import { geoIp, secondaryGeo } from "./geo.js";
 import { publicIp, upstream } from "./http.js";
+import { ipType } from "./ip-type.js";
 
 // Aggregated IP reputation. Keyed sources (ipapi.is, proxycheck.io, AbuseIPDB)
-// are skipped without their secret; keyless lookups (ipwho.is geo, Team Cymru
-// origin/ASN over DoH, PTR, RPKI via RIPEstat) always run. The result stays
-// compatible with the legacy CoffeeIp shape consumed by src/views/ip/coffee.ts.
+// are skipped without their secret; keyless lookups (geo via ipwho.is with an
+// ip.sb fallback, Team Cymru origin/ASN over DoH, PTR, RPKI via RIPEstat)
+// always run. The result stays compatible with the legacy CoffeeIp shape
+// consumed by src/views/ip/coffee.ts.
 
 const ABUSER_LABEL_SCORE = {
   "very low": 0,
@@ -228,8 +230,9 @@ export function computeTrust(m) {
   }
   risk = Math.min(100, Math.max(0, risk));
   const riskSources = Number.isInteger(m.riskSources) ? m.riskSources : 0;
+  const scored = m.typeOnly === true || riskSources > 0;
   return {
-    trust_score: riskSources === 0 ? null : 100 - risk,
+    trust_score: scored ? 100 - risk : null,
     risk,
     confidence:
       riskSources >= 2 ? "high" : riskSources === 1 ? "medium" : "low",
@@ -270,7 +273,11 @@ function sourceState(key, result, detail) {
   return detail && result ? { state, ...detail(result) } : { state };
 }
 
-export async function ipQuality(ip, env = {}) {
+export async function ipQuality(
+  ip,
+  env = {},
+  requestOrigin = "https://ipquality.local",
+) {
   ip = publicIp(ip);
   const keyed = (key, run) =>
     key
@@ -278,13 +285,16 @@ export async function ipQuality(ip, env = {}) {
           .then(run)
           .catch(() => null)
       : null;
-  const [ipapi, proxycheck, abuse, origin, ptr, ipwho] = await Promise.all([
+  const [ipapi, proxycheck, abuse, origin, ptr, geo] = await Promise.all([
     keyed(env.IPAPI_IS_KEY, () => fetchIpapi(ip, env.IPAPI_IS_KEY)),
     keyed(env.PROXYCHECK_KEY, () => fetchProxycheck(ip, env.PROXYCHECK_KEY)),
     keyed(env.ABUSEIPDB_KEY, () => fetchAbuseipdb(ip, env.ABUSEIPDB_KEY)),
     cymruOrigin(ip).catch(() => null),
     ptrLookup(ip).catch(() => null),
-    geoIp(ip).catch(() => null),
+    // ipwho.is blocks Cloudflare Worker egress, so fall back to ip.sb.
+    geoIp(ip)
+      .catch(() => secondaryGeo(ip))
+      .catch(() => null),
   ]);
   const [asnInfo, rpki] = origin?.asn
     ? await Promise.all([
@@ -295,20 +305,35 @@ export async function ipQuality(ip, env = {}) {
       ])
     : [null, null];
 
+  // Without any keyed risk source, ip-api.com supplies a type-only fallback
+  // (hosting/mobile). Its crude proxy bit never enters the score.
+  let ipApi = null;
+  if (!ipapi && !proxycheck && !abuse) {
+    const response = await ipType(ip, requestOrigin).catch(() => null);
+    const data = response ? await response.json().catch(() => null) : null;
+    if (data?.available === true) ipApi = data;
+  }
+
   const detections = proxycheck?.detections ?? {};
   const network = proxycheck?.network ?? {};
   const networkType = textOr(network.type)?.toLowerCase() ?? "";
   const companyType = textOr(
     typeof ipapi?.company === "object" ? ipapi.company.type : undefined,
     networkType === "hosting" ? "hosting" : networkType || undefined,
+    ipApi?.hosting === true ? "hosting" : undefined,
   );
   const isDatacenter = boolOr(
     ipapi?.is_datacenter,
     typeof detections.hosting === "boolean" ? detections.hosting : undefined,
     abuse?.usageType?.includes("Data Center") ? true : undefined,
+    ipApi?.hosting,
   );
   const isVpn = boolOr(ipapi?.is_vpn, detections.vpn);
-  const isProxy = boolOr(ipapi?.is_proxy, detections.proxy);
+  const isProxy = boolOr(
+    ipapi?.is_proxy,
+    detections.proxy,
+    ipApi?.proxy && !ipApi.hosting ? true : undefined,
+  );
   const isTor = boolOr(
     ipapi?.is_tor,
     detections.tor,
@@ -323,7 +348,7 @@ export async function ipQuality(ip, env = {}) {
       ? true
       : undefined,
   );
-  const isMobile = boolOr(ipapi?.is_mobile);
+  const isMobile = boolOr(ipapi?.is_mobile, ipApi?.mobile);
   const isPublicService =
     ipapi?.is_anycast === true ||
     PUBLIC_SERVICE_PREFIXES.some((prefix) => cidrMatch(ip, prefix)) ||
@@ -332,7 +357,7 @@ export async function ipQuality(ip, env = {}) {
   const location = ipapi?.location ?? {};
   const geoCountryCode = textOr(
     location.country_code,
-    ipwho?.country_code,
+    geo?.country_code,
   )?.toUpperCase();
   const geoSources = [];
   if (ipapi && (location.country || location.city)) {
@@ -346,15 +371,15 @@ export async function ipQuality(ip, env = {}) {
       lon: typeof location.longitude === "number" ? location.longitude : null,
     });
   }
-  if (ipwho) {
+  if (geo) {
     geoSources.push({
-      src: "ipwho.is",
-      country: ipwho.country,
-      country_code: ipwho.country_code,
-      region: ipwho.region,
-      city: ipwho.city,
-      lat: typeof ipwho.latitude === "number" ? ipwho.latitude : null,
-      lon: typeof ipwho.longitude === "number" ? ipwho.longitude : null,
+      src: geo.source,
+      country: geo.country,
+      country_code: geo.country_code,
+      region: geo.region,
+      city: geo.city,
+      lat: typeof geo.latitude === "number" ? geo.latitude : null,
+      lon: typeof geo.longitude === "number" ? geo.longitude : null,
     });
   }
 
@@ -377,6 +402,7 @@ export async function ipQuality(ip, env = {}) {
     geoCc: geoCountryCode,
     rpkiStatus: rpki,
     riskSources,
+    typeOnly: ipApi !== null,
   });
 
   const threats = trust.penalties.map((penalty) => ({
@@ -394,12 +420,12 @@ export async function ipQuality(ip, env = {}) {
   const holder = asnInfo?.holder;
   return {
     ip,
-    country: textOr(location.country, ipwho?.country),
-    countryCode: textOr(location.country_code, ipwho?.country_code),
-    region: textOr(location.region, ipwho?.region),
-    city: textOr(location.city, ipwho?.city),
+    country: textOr(location.country, geo?.country),
+    countryCode: textOr(location.country_code, geo?.country_code),
+    region: textOr(location.region, geo?.region),
+    city: textOr(location.city, geo?.city),
     isp: textOr(
-      ipwho?.isp,
+      geo?.isp,
       typeof ipapi?.asn === "object" ? ipapi.asn.org : undefined,
     ),
     asn: Number.isInteger(origin?.asn)
@@ -410,12 +436,12 @@ export async function ipQuality(ip, env = {}) {
           ? network.asn
           : typeof network.asn === "string" && /^AS\d+$/i.test(network.asn)
             ? Number(network.asn.slice(2))
-            : ipwho?.asn,
+            : geo?.asn,
     asOrganization: textOr(
       typeof ipapi?.asn === "object" ? ipapi.asn.descr : undefined,
       holder,
       network.provider,
-      ipwho?.isp,
+      geo?.isp,
     ),
     asname: asnInfo?.asname,
     asn_allocated: asnInfo?.allocated || undefined,
@@ -451,7 +477,7 @@ export async function ipQuality(ip, env = {}) {
     geo_sources: geoSources.length ? geoSources : undefined,
     trust_score: isPublicService === true ? null : trust.trust_score,
     confidence: trust.confidence,
-    sources_ok: [ipapi, proxycheck, abuse, origin, ipwho].filter(Boolean)
+    sources_ok: [ipapi, proxycheck, abuse, origin, geo, ipApi].filter(Boolean)
       .length,
     source_detail: {
       ipapi_is: sourceState(env.IPAPI_IS_KEY, ipapi, (result) => ({
@@ -470,6 +496,16 @@ export async function ipQuality(ip, env = {}) {
         abuse_confidence: result?.abuseConfidenceScore,
         reports: result?.totalReports,
       })),
+      ip_api_fallback:
+        ipapi || proxycheck || abuse
+          ? { state: "skipped" }
+          : ipApi
+            ? {
+                state: "ok",
+                hosting: ipApi.hosting,
+                mobile: ipApi.mobile,
+              }
+            : { state: "unavailable" },
       cymru: origin
         ? {
             state: "ok",
@@ -478,7 +514,7 @@ export async function ipQuality(ip, env = {}) {
             rir: origin.rir,
           }
         : { state: "unavailable" },
-      ipwho_is: ipwho ? { state: "ok" } : { state: "unavailable" },
+      geo: geo ? { state: "ok", source: geo.source } : { state: "unavailable" },
     },
     intelligence: {
       threats,
