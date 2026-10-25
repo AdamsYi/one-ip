@@ -20,6 +20,7 @@ import { t } from "@/i18n";
 import { toolGroups } from "@/layout/routes";
 import { companyTypeColors } from "@/lib/ip-badge-colors";
 import { ipScoreColor } from "@/lib/ip-score";
+import type { Geo } from "@/lib/types";
 import { BrowserSummary } from "@/views/browser/summary";
 import { lookupIp } from "@/views/ip/api";
 import { PerfectScoreEffects } from "@/views/ip/perfect-score-effects";
@@ -38,8 +39,18 @@ import {
 } from "lucide-react";
 import { getGeo, getBrowserIp, getDomesticIp } from "./api";
 import { IpSearch } from "./components/ip-search";
+import { VerdictHero } from "./components/verdict-hero";
 import { PlatformSummary } from "./platform-summary";
 import { SplitResults } from "./split-results";
+
+function heroData(
+  probe: { ip: string } | undefined,
+  geoByIp: Map<string, { data?: Geo }>,
+): Geo | undefined {
+  if (!probe) return undefined;
+  const geo = geoByIp.get(probe.ip)?.data;
+  return geo ? { ...probe, ...geo } : undefined;
+}
 
 export function HomePage() {
   const mobile = useIsMobile();
@@ -86,6 +97,8 @@ export function HomePage() {
           "home-webrtc",
           "webrtc-diagnostic",
           "home-browser-fingerprint",
+          "datacenter",
+          "china-route",
         ].includes(String(query.queryKey[0])),
     };
     try {
@@ -184,6 +197,8 @@ export function HomePage() {
     })),
   });
   const typeByIp = new Map(ips.map((ip, index) => [ip, typeQueries[index]]));
+  const heroProbe = probes[1].data ?? probes[0].data;
+  const heroGeo = heroData(heroProbe, geoByIp);
   return (
     <div className="home-page">
       <div className="home-toolbar">
@@ -199,6 +214,7 @@ export function HomePage() {
           </ActionButton>
         </div>
       </div>
+      {heroGeo && <VerdictHero geo={heroGeo} />}
       <div className="home-overview home-ip-overview">
         {cards.map(({ query, data, version, label }, index) => {
           const pending = !data && query.isPending;

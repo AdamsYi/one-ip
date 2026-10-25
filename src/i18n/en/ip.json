@@ -475,5 +475,11 @@
   "ip.route.line.cmnet": "CMNET",
   "ip.route.line.dynamic_mixed": "Dynamic mixed",
   "ip.route.line.inconclusive": "Destination network only",
-  "ip.route.line.unknown": "No backbone seen"
+  "ip.route.line.unknown": "No backbone seen",
+  "ip.cost.title": "Cost profile",
+  "ip.cost.landing": "Landing cost",
+  "ip.cost.route": "Route premium",
+  "ip.cost.ip": "IP quality",
+  "ip.cost.summary": "Single-node monthly cost is roughly ${0}–{1}; a plan priced far below this range suggests overselling or fly-by-night risk.",
+  "ip.cost.unknown": "Datacenter not listed; cost estimate unavailable."
 }

@@ -475,5 +475,11 @@
   "ip.route.line.cmnet": "CMNET",
   "ip.route.line.dynamic_mixed": "动态混合",
   "ip.route.line.inconclusive": "仅见目的网",
-  "ip.route.line.unknown": "未见骨干"
+  "ip.route.line.unknown": "未见骨干",
+  "ip.cost.title": "成本画像",
+  "ip.cost.landing": "落地成本",
+  "ip.cost.route": "线路溢价",
+  "ip.cost.ip": "IP 素质",
+  "ip.cost.summary": "单节点月成本约 ${0}–{1}；同配置月付明显低于此区间需警惕超售或跑路。",
+  "ip.cost.unknown": "机房未收录，暂无法估算成本。"
 }

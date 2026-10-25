@@ -15,6 +15,7 @@ import { useAtom } from "jotai";
 import { Crown, Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { ChinaRouteCard } from "./china-route-card";
 import { coffeeThreatLabels, type CoffeeLookup } from "./coffee";
+import { CostCard } from "./cost-card";
 import { DatacenterCard } from "./datacenter-card";
 import { IpFacts } from "./field-help";
 import { IpLatency } from "./latency";
@@ -196,6 +197,7 @@ export function IpDetails({
         />
       </Suspense>
       <DatacenterCard ip={d.ip} />
+      <CostCard ip={d.ip} trustScore={d.trust_score} />
       <div className="ip-dossier-grid">
         <ToolCard title={t("ip.networkAttributes")}>
           <IpFacts

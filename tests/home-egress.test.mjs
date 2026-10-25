@@ -49,7 +49,10 @@ test("domestic egress comes first and external IPv4 remains separate", () => {
 test("matching domestic and external IPv4 produces one card", () => {
   let tree;
   render([{ data: ipv4 }, { data: ipv4 }, failed], [], {}, (value) => { tree = value; });
-  assert.equal(tree.props.children[1].props.children[0].length, 1);
+  const overview = tree.props.children.find(
+    (child) => child?.props?.className?.includes("home-overview"),
+  );
+  assert.equal(overview.props.children[0].length, 1);
 });
 test("failed domestic probe never promotes a proxy or routed IPv6 to local egress", () => {
   const result = render([failed, { data: ipv4 }, failed], [{ data: ipv6 }]);
