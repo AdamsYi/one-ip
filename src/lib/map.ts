@@ -53,9 +53,13 @@ export function mapTileLayers(config: MapConfig): MapTileLayerSpec[] {
       { url: url("cva_w"), options: { ...options } },
     ];
   }
+  // Same-origin tile proxy: client routing rules, DNS pollution or blockers
+  // aimed at tile.openstreetmap.org cannot break the map, and the Worker
+  // caches tiles at the edge.
+  const base = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || "/api";
   return [
     {
-      url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      url: `${base}/map/tile/{z}/{x}/{y}.png`,
       options: { maxZoom: 19, attribution: OSM_ATTRIBUTION },
     },
   ];

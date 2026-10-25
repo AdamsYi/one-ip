@@ -68,7 +68,7 @@ test("a Tianditu tile failure switches to OpenStreetMap", () => {
   );
   created[0].emit("tileerror");
   assert.equal(created[0].removed, true);
-  assert.match(created[2].url, /tile\.openstreetmap\.org/);
+  assert.match(created[2].url, /\/map\/tile\/\{z\}\/\{x\}\/\{y\}\.png$/);
   created[2].emit("tileerror");
   assert.deepEqual(errors, ["error"]);
 });

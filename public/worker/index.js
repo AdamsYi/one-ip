@@ -10,7 +10,7 @@ import { ipHealth } from "./ip-health.js";
 import { ipNetwork } from "./ip-network.js";
 import { ipQuality } from "./ip-quality.js";
 import { ipType } from "./ip-type.js";
-import { mapConfig } from "./map.js";
+import { mapConfig, mapTile } from "./map.js";
 import { startPing, pingResult, pingNodes } from "./ping.js";
 import { routeResult, routeVerdict } from "./route-verdict.js";
 import { normalizeStatus } from "./service-status.js";
@@ -70,6 +70,8 @@ export default {
           await verifyChallenge(await inputJson(request), env, url.hostname),
         );
       if (path === "/map/config") return json(mapConfig(env));
+      if (path.startsWith("/map/tile/"))
+        return await mapTile(new URL(`/api${path}`, url.origin));
       if (path === "/me") {
         const data = cfGeo(request);
         if (!data.ip || key === "local" || env.LOCAL_DEV === "true")
