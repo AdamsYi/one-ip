@@ -116,7 +116,7 @@ export default {
         ].join("");
         return await cachedJson(
           new URL(
-            `/api/ip/quality/v2${sourceConfig}/${encodeURIComponent(ip)}`,
+            `/api/ip/quality/v3${sourceConfig}/${encodeURIComponent(ip)}`,
             url.origin,
           ),
           21600,

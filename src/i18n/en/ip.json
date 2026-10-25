@@ -514,5 +514,10 @@
   "ip.route.return.help": "The return path cannot be measured from this site: a traceroute must run on the node itself. Run the three commands below on your node / VPS and paste the full output — it is classified with the same rules.",
   "ip.route.return.placeholder": "Paste nexttrace / backtrace / traceroute output…",
   "ip.route.return.parse": "Parse return route",
-  "ip.route.return.parseError": "No known test target found (one of the 12 China carrier IPs); re-collect using the commands above."
+  "ip.route.return.parseError": "No known test target found (one of the 12 China carrier IPs); re-collect using the commands above.",
+  "ip.route.grade.premium": "Premium",
+  "ip.route.grade.optimized": "Optimized",
+  "ip.route.grade.standard": "Standard",
+  "ip.route.grade.unknown": "Unknown",
+  "ip.route.measuringShort": "Measuring…"
 }

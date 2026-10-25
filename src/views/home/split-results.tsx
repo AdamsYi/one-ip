@@ -364,30 +364,53 @@ export function SplitResults({ summary = false }: { summary?: boolean }) {
       )}
       <Content>
         {summary ? (
-          <div className="grid grid-cols-1 items-start gap-2 sm:grid-cols-2">
-            {exits.map((geo) => (
-              <div
-                key={geo.ip}
-                className="flex min-w-0 items-center gap-2 rounded-md bg-muted/30 px-2 py-1.5 text-xs"
-              >
-                <CountryFlag code={geo.country_code} />
-                <span className="min-w-0 flex-1">
-                  <IpText ip={geo.ip} />
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => {
-                    setDetailName(null);
-                    setDetailIp(geo.ip);
-                  }}
+          <div className="flex flex-col gap-2">
+            {[...exits]
+              .map((geo) => ({
+                geo,
+                siteRows: rows.filter((row) => row.geo?.ip === geo.ip),
+              }))
+              .sort((a, b) => b.siteRows.length - a.siteRows.length)
+              .map(({ geo, siteRows }) => (
+                <div
+                  key={geo.ip}
+                  className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-muted/20 p-2.5"
                 >
-                  {rows.filter((row) => row.geo?.ip === geo.ip).length}
-                  {t("home.sites")}
-                </Button>
-              </div>
-            ))}
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <CountryFlag code={geo.country_code} />
+                    <span className="font-mono text-sm font-medium">
+                      <IpText ip={geo.ip} />
+                    </span>
+                    <span className="min-w-0 truncate text-xs text-muted-foreground">
+                      {[geo.city, geo.country, geo.isp]
+                        .filter(Boolean)
+                        .filter(
+                          (value, index, all) => all.indexOf(value) === index,
+                        )
+                        .join(" · ")}
+                    </span>
+                    <span className="ml-auto shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                      {siteRows.length} {t("home.sites")}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {siteRows.map((row) => (
+                      <button
+                        key={row.name}
+                        type="button"
+                        onClick={() => {
+                          setDetailIp(null);
+                          setDetailName(row.name);
+                        }}
+                        className="flex max-w-full items-center gap-1.5 rounded-md bg-background px-2 py-1 text-xs ring-1 ring-border hover:text-primary [&_.site-icon]:size-3.5"
+                      >
+                        <SiteLogo src={row.icon} />
+                        <span className="min-w-0 truncate">{row.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             <p className="home-note col-span-full">
               {pending ? (
                 <Pending>{t("home.checkingRoutedEgress")}</Pending>

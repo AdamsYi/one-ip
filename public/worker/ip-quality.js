@@ -8,12 +8,14 @@ import { ipType } from "./ip-type.js";
 // always run. The result stays compatible with the legacy CoffeeIp shape
 // consumed by src/views/ip/coffee.ts.
 
+// ipapi.is rates abuse per network block (often a whole ISP), so the
+// common Low label carries no signal for a single address.
 const ABUSER_LABEL_SCORE = {
   "very low": 0,
-  low: 5,
-  elevated: 30,
-  high: 60,
-  "very high": 85,
+  low: 0,
+  elevated: 15,
+  high: 40,
+  "very high": 75,
 };
 const PUBLIC_SERVICE_PREFIXES = [
   "1.1.1.0/24",
@@ -201,7 +203,9 @@ export function computeTrust(m) {
       score: 50,
       label: m.vpnService ? `VPN 出口（${m.vpnService}）` : "VPN 出口",
     });
-  if (Number.isFinite(m.pcRisk) && m.pcRisk > 0) {
+  // proxycheck assigns every hosting IP a baseline risk; only count it when
+  // it actually flags the address, otherwise it double-counts the type base.
+  if (m.pcFlagged && Number.isFinite(m.pcRisk) && m.pcRisk > 0) {
     const confidence = Number.isFinite(m.pcConfidence)
       ? Math.min(100, Math.max(0, m.pcConfidence))
       : 100;
@@ -412,6 +416,14 @@ export async function ipQuality(
     vpnService: ipapi?.vpn?.service,
     pcRisk: detections.risk,
     pcConfidence: detections.confidence,
+    pcFlagged: [
+      detections.proxy,
+      detections.vpn,
+      detections.compromised,
+      detections.scraper,
+      detections.tor,
+      detections.anonymous,
+    ].some((flag) => flag === true),
     hosting: isDatacenter === true,
     companyType,
     registeredCc: origin?.cc,

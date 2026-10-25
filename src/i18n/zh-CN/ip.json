@@ -514,5 +514,10 @@
   "ip.route.return.help": "回程无法从网站发起：traceroute 必须从节点上运行。在你的节点 / VPS 上执行下面三网命令，把输出整段粘贴回来，会用同一套规则解析判定。",
   "ip.route.return.placeholder": "粘贴 nexttrace / backtrace / traceroute 的输出…",
   "ip.route.return.parse": "解析回程",
-  "ip.route.return.parseError": "未识别到已知测试目标（三网 12 个 IP 之一），请使用上方命令重新采集。"
+  "ip.route.return.parseError": "未识别到已知测试目标（三网 12 个 IP 之一），请使用上方命令重新采集。",
+  "ip.route.grade.premium": "精品线路",
+  "ip.route.grade.optimized": "优化线路",
+  "ip.route.grade.standard": "普通线路",
+  "ip.route.grade.unknown": "未定",
+  "ip.route.measuringShort": "实测中…"
 }

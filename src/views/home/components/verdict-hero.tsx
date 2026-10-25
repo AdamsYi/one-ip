@@ -7,6 +7,7 @@ import type { Geo } from "@/lib/types";
 import { verdict } from "@/lib/verdict";
 import { hideIpAtom } from "@/store/privacy";
 import { lookupIp } from "@/views/ip/api";
+import { RouteGradeTiles } from "@/views/ip/route-grade-tiles";
 import { useQuery } from "@tanstack/react-query";
 import { useAtom } from "jotai";
 import { BadgeCheck, Compass } from "lucide-react";
@@ -28,44 +29,6 @@ interface RouteVerdictData {
   status: "finished" | "pending" | "degraded";
   carriers?: Partial<Record<"CT" | "CU" | "CM", CarrierVerdict>>;
 }
-
-const CARRIERS: {
-  key: "CT" | "CU" | "CM";
-  label: "ip.route.carrierCT" | "ip.route.carrierCU" | "ip.route.carrierCM";
-}[] = [
-  { key: "CT", label: "ip.route.carrierCT" },
-  { key: "CU", label: "ip.route.carrierCU" },
-  { key: "CM", label: "ip.route.carrierCM" },
-];
-
-const LINE_LABELS: Record<string, string> = {
-  cn2_gia: "ip.route.line.cn2_gia",
-  cn2_gt: "ip.route.line.cn2_gt",
-  cn2_mixed: "ip.route.line.cn2_mixed",
-  cn2: "ip.route.line.cn2",
-  ctgnet: "ip.route.line.ctgnet",
-  "163": "ip.route.line.163",
-  "9929": "ip.route.line.9929",
-  "9929_mixed": "ip.route.line.9929_mixed",
-  cug: "ip.route.line.cug",
-  "4837": "ip.route.line.4837",
-  cmin2: "ip.route.line.cmin2",
-  cmin2_mixed: "ip.route.line.cmin2_mixed",
-  cmi: "ip.route.line.cmi",
-  cmnet: "ip.route.line.cmnet",
-  dynamic_mixed: "ip.route.line.dynamic_mixed",
-};
-
-function lineLabel(code: string): string {
-  const key = LINE_LABELS[code];
-  return key && isMessageKey(key) ? t(key) : code;
-}
-
-const CONFIDENCE_DOT: Record<string, string> = {
-  confirmed: "bg-emerald-500",
-  mixed: "bg-amber-500",
-  unverified: "bg-muted-foreground/40",
-};
 
 export function VerdictHero({ geo }: { geo: Geo }) {
   const [hidden] = useAtom(hideIpAtom);
@@ -210,44 +173,19 @@ export function VerdictHero({ geo }: { geo: Geo }) {
           )}
         </div>
       </div>
-      {route && (
-        <div className="border-t border-border px-5 py-3">
-          <p className="mb-2 text-xs text-muted-foreground">
-            {t("ip.route.title")}
-            <span className="ml-2">{t("ip.route.toTargetNote")}</span>
-          </p>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {CARRIERS.map(({ key, label }) => {
-              const carrier = route.carriers?.[key];
-              return (
-                <div
-                  key={key}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
-                >
-                  <span className="text-xs text-muted-foreground">
-                    {t(label)}
-                  </span>
-                  {route.status === "pending" ? (
-                    <span className="text-xs text-muted-foreground">
-                      {t("ip.route.measuring")}
-                    </span>
-                  ) : carrier ? (
-                    <span className="flex items-center gap-1.5 text-sm font-medium">
-                      {lineLabel(carrier.code)}
-                      <span
-                        className={`inline-block size-2 rounded-full ${CONFIDENCE_DOT[carrier.confidence]}`}
-                        aria-hidden="true"
-                      />
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <div className="border-t border-border px-5 py-4">
+        <p className="mb-2 flex flex-wrap items-baseline gap-2">
+          <span className="text-sm font-semibold">{t("ip.route.title")}</span>
+          <span className="text-xs text-muted-foreground">
+            {t("ip.route.toTargetNote")}
+          </span>
+        </p>
+        <RouteGradeTiles
+          carriers={route?.carriers}
+          pending={!route || route.status === "pending"}
+          showReason={false}
+        />
+      </div>
     </Card>
   );
 }

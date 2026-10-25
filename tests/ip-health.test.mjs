@@ -54,6 +54,7 @@ function sourceRouter(opts = {}) {
           scraper: false,
           tor: false,
           hosting: false,
+          anonymous: opts.flagged === true,
           risk: pcRisk(),
           confidence: 100,
         },
@@ -131,7 +132,7 @@ test("health API aggregates sources, keeps flags and returns uncached JSON", asy
 
 test("health score boundaries match the UI thresholds", async (t) => {
   let pcRisk;
-  t.mock.method(globalThis, "fetch", sourceRouter({ pcRisk: () => pcRisk }));
+  t.mock.method(globalThis, "fetch", sourceRouter({ pcRisk: () => pcRisk, flagged: true }));
   for (const [risk, score, status] of [
     [25, 75, "good"],
     [26, 74, "moderate"],

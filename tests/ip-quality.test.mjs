@@ -10,10 +10,10 @@ import {
 
 test("abuser score labels map to penalty points", () => {
   assert.equal(abuserLabelScore("0.001 (Very Low)"), 0);
-  assert.equal(abuserLabelScore("0.0015 (Low)"), 5);
-  assert.equal(abuserLabelScore("0.0206 (Elevated)"), 30);
-  assert.equal(abuserLabelScore("0.1016 (High)"), 60);
-  assert.equal(abuserLabelScore("1 (Very High)"), 85);
+  assert.equal(abuserLabelScore("0.0015 (Low)"), 0);
+  assert.equal(abuserLabelScore("0.0206 (Elevated)"), 15);
+  assert.equal(abuserLabelScore("0.1016 (High)"), 40);
+  assert.equal(abuserLabelScore("1 (Very High)"), 75);
   assert.equal(abuserLabelScore("garbage"), null);
   assert.equal(abuserLabelScore(undefined), null);
 });
@@ -54,7 +54,8 @@ test("computeTrust takes the strongest penalty, adds extras and caps at 100", ()
   );
   assert.equal(computeTrust({ ...base, abuseConfidence: 100 }).trust_score, 0);
   assert.equal(
-    computeTrust({ ...base, pcRisk: 50, pcConfidence: 50 }).trust_score,
+    computeTrust({ ...base, pcRisk: 50, pcConfidence: 50, pcFlagged: true })
+      .trust_score,
     75,
   );
   assert.equal(
@@ -66,6 +67,10 @@ test("computeTrust takes the strongest penalty, adds extras and caps at 100", ()
     null,
   );
   assert.equal(computeTrust({ riskSources: 0 }).confidence, "low");
+  assert.equal(
+    computeTrust({ ...base, pcRisk: 33, pcConfidence: 100 }).trust_score,
+    100,
+  );
   assert.equal(
     computeTrust({ riskSources: 0, typeOnly: true, hosting: true }).trust_score,
     85,

@@ -181,6 +181,7 @@ export function IpDetails({
           </div>
         </div>
       )}
+      <ChinaRouteCard ip={d.ip} />
       <Suspense
         fallback={
           <ToolCard title={t("common.ipProfile")}>
@@ -199,6 +200,7 @@ export function IpDetails({
       </Suspense>
       <DatacenterCard ip={d.ip} />
       <CostCard ip={d.ip} trustScore={d.trust_score} />
+      <ReturnRouteCard />
       <div className="ip-dossier-grid">
         <ToolCard title={t("ip.networkAttributes")}>
           <IpFacts
@@ -466,8 +468,6 @@ export function IpDetails({
           )}
         </ToolCard>
       )}
-      <ChinaRouteCard ip={d.ip} />
-      <ReturnRouteCard />
       <Suspense
         fallback={
           <ToolCard title={t("ip.bgpRouteTopology")}>
