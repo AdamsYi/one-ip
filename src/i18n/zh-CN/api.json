@@ -67,5 +67,6 @@
   "api.unexpectedCertificateLogDataFormat": "证书日志数据格式异常",
   "api.unsupportedMeasurementProtocol": "不支持此测量协议",
   "api.subdomainSourceInvalid": "子域名数据格式异常",
-  "api.subdomainSourcesUnavailable": "子域名数据源暂不可用，请稍后重试"
+  "api.subdomainSourcesUnavailable": "子域名数据源暂不可用，请稍后重试",
+  "api.ipDataSourceTemporarilyUnavailable": "IP 数据源暂不可用，请稍后重试"
 }

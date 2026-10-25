@@ -69,6 +69,7 @@ const apiMessageKeys = [
   "api.upstreamUnavailable",
   "api.subdomainSourceInvalid",
   "api.subdomainSourcesUnavailable",
+  "api.ipDataSourceTemporarilyUnavailable",
 ] as const satisfies readonly MessageKey[];
 const sourceMessages = messages["zh-CN"];
 const apiMessages = new Map<string, MessageKey>(

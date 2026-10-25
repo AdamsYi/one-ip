@@ -7,6 +7,7 @@ import { HttpError, inputJson, json, publicIp } from "./http.js";
 import { siteIcon } from "./icons.js";
 import { ipHealth } from "./ip-health.js";
 import { ipNetwork } from "./ip-network.js";
+import { ipQuality } from "./ip-quality.js";
 import { ipType } from "./ip-type.js";
 import { mapConfig } from "./map.js";
 import { startPing, pingResult, pingNodes } from "./ping.js";
@@ -97,6 +98,15 @@ export default {
             data.routeAvailable &&
             data.ptrAvailable &&
             data.validations.every((item) => item.status !== "unavailable"),
+        );
+      }
+      if (path.startsWith("/ip/quality/")) {
+        const ip = publicIp(decodeURIComponent(path.slice(12)));
+        return await cachedJson(
+          new URL(`/api/ip/quality/${encodeURIComponent(ip)}`, url.origin),
+          21600,
+          () => ipQuality(ip, env),
+          (data) => data.sources_ok >= 2,
         );
       }
       if (path.startsWith("/ip/lookup/")) {

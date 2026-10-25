@@ -1,11 +1,14 @@
 import { t } from "@/i18n";
-import { endpoint, request } from "@/lib/network";
+import { request } from "@/lib/network";
 import type { Geo } from "@/lib/types";
 import { adaptCoffee, type CoffeeIp } from "./coffee.ts";
 
+const apiBase =
+  (import.meta.env && import.meta.env.VITE_API_BASE_URL) || "/api";
+
 export async function lookupIp(ip: string, signal?: AbortSignal) {
   const data = await request<CoffeeIp>(
-    `https://ip.net.coffee/api/ip/lookup/${encodeURIComponent(ip)}`,
+    `${apiBase}/ip/quality/${encodeURIComponent(ip)}`,
     { signal, mode: "cors", credentials: "omit", cache: "no-store" },
   );
   const normalize = (value: string) =>
@@ -15,4 +18,4 @@ export async function lookupIp(ip: string, signal?: AbortSignal) {
   return adaptCoffee(data);
 }
 export const currentIp = (signal?: AbortSignal) =>
-  endpoint<Geo>("/me", { signal });
+  request<Geo>(`${apiBase}/me`, { signal });

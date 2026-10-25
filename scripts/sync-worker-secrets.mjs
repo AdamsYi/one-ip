@@ -24,6 +24,10 @@ const allowed = [
   "RECAPTCHA_SECRET",
   "RECAPTCHA_HOSTNAMES",
   "TIANDITU_TOKEN",
+  "IPAPI_IS_KEY",
+  "PROXYCHECK_KEY",
+  "ABUSEIPDB_KEY",
+  "GLOBALPING_TOKEN",
 ];
 if (Object.keys(values).some((key) => !allowed.includes(key)))
   throw new Error("Secret file contains unsupported configuration keys");

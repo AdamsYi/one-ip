@@ -67,5 +67,6 @@
   "api.unexpectedCertificateLogDataFormat": "Unexpected certificate log data format",
   "api.unsupportedMeasurementProtocol": "Unsupported measurement protocol",
   "api.subdomainSourceInvalid": "Unexpected subdomain data format",
-  "api.subdomainSourcesUnavailable": "Subdomain sources are unavailable. Please retry later"
+  "api.subdomainSourcesUnavailable": "Subdomain sources are unavailable. Please retry later",
+  "api.ipDataSourceTemporarilyUnavailable": "IP data sources are temporarily unavailable. Please retry later"
 }

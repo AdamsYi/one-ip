@@ -15,7 +15,7 @@ import { IpDetails } from "./details";
 export default function IpPage() {
   const { ip = "" } = useParams();
   const navigate = useNavigate();
-  const history = useLookupHistory<CoffeeLookup>("ip-tools:coffee-history:v1");
+  const history = useLookupHistory<CoffeeLookup>("ip-tools:coffee-history:v2");
   const cached = history.find(ip);
   const query = useQuery({
     queryKey: ["lookup-ip-coffee", ip],

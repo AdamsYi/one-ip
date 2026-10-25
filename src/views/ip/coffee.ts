@@ -95,7 +95,7 @@ export function coffeeThreatLabels(data: CoffeeIp, riskOnly = false): string[] {
 export function adaptCoffee(data: CoffeeIp): CoffeeLookup {
   const sources: Geo[] = (data.geo_sources ?? []).map((g) => ({
     ip: data.ip,
-    source: `Net.Coffee / ${g.src ?? "—"}`,
+    source: `OneGlance / ${g.src ?? "—"}`,
     country: g.country,
     country_code: g.country_code,
     region: g.region,
@@ -118,12 +118,12 @@ export function adaptCoffee(data: CoffeeIp): CoffeeLookup {
       asn: data.asn,
       latitude: coordinates?.latitude,
       longitude: coordinates?.longitude,
-      source: "Net.Coffee",
+      source: "OneGlance",
     },
     sources,
     risk: {
       available: true,
-      source: "Net.Coffee",
+      source: "OneGlance",
       vpn: data.is_vpn,
       proxy: data.is_proxy,
       tor: data.is_tor,

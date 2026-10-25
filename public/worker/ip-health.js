@@ -1,4 +1,5 @@
-import { HttpError, json, publicIp, upstream } from "./http.js";
+import { HttpError, json, publicIp } from "./http.js";
+import { ipQuality } from "./ip-quality.js";
 
 export async function ipHealth(request, env) {
   const url = new URL(request.url);
@@ -15,17 +16,9 @@ export async function ipHealth(request, env) {
       "无法获取真实访客 IP，请指定 ip 参数或部署 Worker 后检测",
     );
   const ip = publicIp(target ?? request.headers.get("CF-Connecting-IP"));
-  const data = await upstream(
-    `https://ip.net.coffee/api/ip/lookup/${encodeURIComponent(ip)}`,
-    { redirect: "manual" },
-  );
-  let returnedIp;
-  try {
-    returnedIp = publicIp(data?.ip);
-  } catch {
-    throw new HttpError(502, "IP 数据源返回的地址无效");
-  }
-  if (returnedIp !== ip) throw new HttpError(502, "IP 数据源返回的地址不匹配");
+  const data = await ipQuality(ip, env);
+  if (!data.sources_ok)
+    throw new HttpError(502, "IP 数据源暂不可用，请稍后重试");
   const score =
     typeof data.trust_score === "number" &&
     Number.isFinite(data.trust_score) &&

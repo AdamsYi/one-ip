@@ -95,7 +95,7 @@
   "ip.asnRegistered": "ASN registered",
   "ip.abuseScore": "Abuse score",
   "ip.scoreSource": "Score source",
-  "ip.scoreNetworkClassificationRiskFlagsSuppliedNetCoffee": "Score, network classification and risk flags are supplied by Net.Coffee. Results are displayed directly without the previous local scoring formula.",
+  "ip.scoreNetworkClassificationRiskFlagsSuppliedNetCoffee": "Score, network classification and risk flags come from this site's aggregated sources, with confidence and per-source key results.",
   "ip.officialAiPlatformScoreMissingSourceFieldsShown": "This is not an official AI platform score. Missing source fields are shown as unknown.",
   "ip.region": "Region",
   "ip.relatedDomains": "Related domains",

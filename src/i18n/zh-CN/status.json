@@ -66,7 +66,7 @@
   "status.queryIpHealthTerminalScriptApiKeyRequired": "通过终端或脚本查询 IP 健康度，无需 API Key。",
   "status.optionalPublicIpv4Ipv6DefaultsRequestEgressIp": "可选。公网 IPv4 或 IPv6；省略时查询当前请求的出口 IP。本地开发必须指定。",
   "status.optionalJsonDefaultTextErrorsAlwaysReturnJson": "可选。json（默认）或 text；错误始终返回 JSON。",
-  "status.whenUsingProxyQueryUsesEgressIpNet": "经过代理时查询的是代理出口。结果来自 Net.Coffee，仅表示 IP 信誉，不代表网络速度或 AI 账号可用性。",
+  "status.whenUsingProxyQueryUsesEgressIpNet": "经过代理时查询的是代理出口。结果为多源聚合评分，仅表示 IP 信誉，不代表网络速度或 AI 账号可用性。",
   "status.requestExamples": "调用示例",
   "status.currentEgressTerminalText": "当前出口 · 终端文本",
   "status.currentEgressJson": "当前出口 · JSON",

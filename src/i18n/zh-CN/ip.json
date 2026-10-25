@@ -95,7 +95,7 @@
   "ip.asnRegistered": "ASN 注册日期",
   "ip.abuseScore": "滥用评分",
   "ip.scoreSource": "评分来源",
-  "ip.scoreNetworkClassificationRiskFlagsSuppliedNetCoffee": "评分与类型、风险标记均来自 Net.Coffee，直接展示接口结果，不使用本站旧评分公式。",
+  "ip.scoreNetworkClassificationRiskFlagsSuppliedNetCoffee": "评分与类型、风险标记来自站点自建多源聚合，附置信度与各源关键结果。",
   "ip.officialAiPlatformScoreMissingSourceFieldsShown": "该评分不是 AI 平台官方评分；数据源未返回的字段显示未知。",
   "ip.region": "地区",
   "ip.relatedDomains": "关联域名",

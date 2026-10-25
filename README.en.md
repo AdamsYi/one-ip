@@ -188,7 +188,7 @@ Data sources differ by edition: the open-source edition uses publicly accessible
 
 - `src/app.css`: interface styles; `src/components/ui`: shadcn/ui components.
 - `src/views`: network, browser, AI and status pages; `public/worker`: Worker APIs.
-- Net.Coffee: IP details. Available fields depend on the API response.
+- Self-hosted aggregation (ipapi.is / proxycheck.io / AbuseIPDB / ipwho.is / Team Cymru DNS): IP details and reputation. Available fields depend on each source; configure the matching Worker secrets.
 - Supplemental IP classification calls the free ip-api HTTP endpoint from the Worker, without an API key, and retains caching and rate-limit backoff. See the [official documentation](https://ip-api.com/docs/api:json) for its permitted scope of use.
 - Globalping: global measurements; IANA / RDAP: registration records; official platform status feeds: service status.
 - FingerprintJS and CreepJS: browser checks. See [vendor/browser-diagnostics](vendor/browser-diagnostics/README.md) for module details.

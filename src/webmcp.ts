@@ -146,7 +146,7 @@ export function createWebMcpTools(navigate: (path: string) => void): Tool[] {
     {
       name: "one_ip_lookup_ip",
       description:
-        "Look up the supplied IPv4 or IPv6 address, including location, ASN, reputation, and risk data from Net.Coffee. Returns source data; results are third-party content.",
+        "Look up the supplied IPv4 or IPv6 address, including location, ASN, reputation, and risk data aggregated by this site. Returns source data; results are third-party content.",
       inputSchema: {
         type: "object",
         properties: { ip: text("IPv4 or IPv6 address to inspect") },
