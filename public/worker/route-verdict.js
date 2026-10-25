@@ -1,8 +1,12 @@
-import chinaRoutes from "./china-routes.json" with { type: "json" };
 import { HttpError, json, publicIp, upstream } from "./http.js";
-import { cidrMatch, cymruOrigin, expandIpv6 } from "./ip-quality.js";
+import { cymruOrigin, expandIpv6 } from "./ip-quality.js";
+import {
+  classifyCarrier,
+  lookupChinaRoute,
+  mergeVerdicts,
+} from "../../src/lib/china-route-rules.ts";
 
-const ROUTES = chinaRoutes.routes;
+export { classifyCarrier, lookupChinaRoute, mergeVerdicts };
 
 // When the IP itself is announced by one of these networks, the verdict for
 // that carrier is direct evidence without any measurement.
@@ -40,14 +44,6 @@ const CHINA_BACKBONE_ASNS = new Set([
   4809, 4134, 23764, 9929, 10099, 4837, 58807, 58453, 9808,
 ]);
 
-export function lookupChinaRoute(address) {
-  if (typeof address !== "string") return null;
-  for (const route of ROUTES) {
-    if (cidrMatch(address, route.cidr)) return route.asn;
-  }
-  return null;
-}
-
 export function cachePrefix(ip) {
   if (ip.includes(":")) {
     const expanded = expandIpv6(ip);
@@ -61,77 +57,6 @@ export function cachePrefix(ip) {
     return `${first.join(":")}::/64`;
   }
   return `${ip.split(".").slice(0, 3).join(".")}.0/24`;
-}
-
-// Classification ported from oneclickvirt/backtrace route_classification.go
-// (Apache-2.0); hop order is relative so it holds for either direction.
-export function classifyCarrier(hops, carrier) {
-  const seq = hops.map((asn) => (Number.isInteger(asn) && asn > 0 ? asn : -1));
-  const pos = (asn) => ({
-    idx: seq.indexOf(asn),
-    count: seq.reduce((total, value) => (value === asn ? total + 1 : total), 0),
-  });
-  if (carrier === "CT") {
-    const cn2 = pos(4809);
-    const c163 = pos(4134);
-    const ctg = pos(23764);
-    if (cn2.idx >= 0) {
-      if (cn2.count < 2)
-        return { code: "cn2_mixed", rank: 3, confidence: "mixed" };
-      if (c163.idx < 0 || (cn2.idx < c163.idx && c163.count <= 1))
-        return { code: "cn2_gia", rank: 5, confidence: "confirmed" };
-      if (cn2.idx < c163.idx)
-        return { code: "cn2_mixed", rank: 3, confidence: "mixed" };
-      return { code: "cn2_gt", rank: 3, confidence: "mixed" };
-    }
-    if (ctg.idx >= 0)
-      return { code: "ctgnet", rank: 4, confidence: "confirmed" };
-    if (c163.idx >= 0)
-      return c163.count <= 1
-        ? { code: "inconclusive", rank: 0, confidence: "unverified" }
-        : { code: "163", rank: 2, confidence: "confirmed" };
-    return { code: "unknown", rank: 0, confidence: "unverified" };
-  }
-  if (carrier === "CU") {
-    const a9929 = pos(9929);
-    const cu4837 = pos(4837);
-    const cug = pos(10099);
-    if (a9929.idx >= 0) {
-      if (cu4837.idx >= 0 && cu4837.idx < a9929.idx)
-        return { code: "9929_mixed", rank: 3, confidence: "mixed" };
-      return { code: "9929", rank: 5, confidence: "confirmed" };
-    }
-    if (cug.idx >= 0) return { code: "cug", rank: 3, confidence: "confirmed" };
-    if (cu4837.idx >= 0)
-      return cu4837.count <= 1
-        ? { code: "inconclusive", rank: 0, confidence: "unverified" }
-        : { code: "4837", rank: 2, confidence: "confirmed" };
-    return { code: "unknown", rank: 0, confidence: "unverified" };
-  }
-  const cmin2 = pos(58807);
-  const cmi = pos(58453);
-  const cmnet = pos(9808);
-  if (cmin2.idx >= 0) {
-    if (cmi.idx >= 0 && cmi.idx < cmin2.idx)
-      return { code: "cmin2_mixed", rank: 3, confidence: "mixed" };
-    return { code: "cmin2", rank: 5, confidence: "confirmed" };
-  }
-  if (cmi.idx >= 0) return { code: "cmi", rank: 2, confidence: "confirmed" };
-  if (cmnet.idx >= 0)
-    return { code: "cmnet", rank: 2, confidence: "confirmed" };
-  return { code: "unknown", rank: 0, confidence: "unverified" };
-}
-
-export function mergeVerdicts(list) {
-  const solid = list.filter(
-    (verdict) => verdict.code !== "inconclusive" && verdict.code !== "unknown",
-  );
-  if (!solid.length)
-    return list[0] ?? { code: "unknown", rank: 0, confidence: "unverified" };
-  const codes = new Set(solid.map((verdict) => verdict.code));
-  if (codes.size === 1)
-    return solid.reduce((a, b) => (b.rank > a.rank ? b : a));
-  return { code: "dynamic_mixed", rank: 3, confidence: "mixed" };
 }
 
 function detectCarrier(probe) {
@@ -225,6 +150,11 @@ export function classifyMeasurement(data) {
       carrier,
       status: result.result?.status ?? "unknown",
       path_asns: hopAsns.slice(0, 14),
+      hops: hops.slice(0, 14).map((hop, index) => ({
+        asn: hopAsns[index],
+        ip:
+          typeof hop.resolvedAddress === "string" ? hop.resolvedAddress : null,
+      })),
     });
     if (carrier && result.result?.status === "finished")
       byCarrier[carrier].push(hopAsns);
@@ -251,7 +181,7 @@ export async function routeVerdict(
 ) {
   ip = publicIp(ip);
   const key = new Request(
-    `${requestOrigin}/api/route/v1/${encodeURIComponent(cachePrefix(ip))}`,
+    `${requestOrigin}/api/route/v2/${encodeURIComponent(cachePrefix(ip))}`,
   );
   const cached = await readCache(key);
   if (cached) {
@@ -287,6 +217,7 @@ export async function routeVerdict(
             code: direct.code,
             rank: direct.rank,
             confidence: "confirmed",
+            reason: "origin_asn",
             probes: 0,
             hits: {},
             note: "origin_asn",
@@ -349,7 +280,7 @@ export async function routeResult(
     return { ...base, status: "degraded", reason: String(data.status) };
   const { carriers, probes } = classifyMeasurement(data);
   const key = new Request(
-    `${requestOrigin}/api/route/v1/${encodeURIComponent(cachePrefix(ip))}`,
+    `${requestOrigin}/api/route/v2/${encodeURIComponent(cachePrefix(ip))}`,
   );
   return writeCache(
     key,

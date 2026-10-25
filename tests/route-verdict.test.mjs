@@ -32,11 +32,11 @@ test("cachePrefix groups IPv4 by /24 and IPv6 by /64", () => {
 
 test("classifyCarrier detects CN2 GIA vs GT vs mixed by hop order", () => {
   // GIA: two 4809 hops, no 163 before
-  assert.deepEqual(classifyCarrier([174, 6939, 4809, 4809, -1, -1], "CT"), {
-    code: "cn2_gia",
-    rank: 5,
-    confidence: "confirmed",
-  });
+  assert.deepEqual(
+    classifyCarrier([174, 6939, 4809, 4809, -1, -1], "CT").code,
+    "cn2_gia",
+  );
+  assert.equal(classifyCarrier([174, 6939, 4809, 4809, -1, -1], "CT").reason, "cn2_gia");
   // delivery hop of 163 after 4809 still GIA
   assert.equal(
     classifyCarrier([4809, 4809, 4134], "CT").code,
@@ -47,12 +47,15 @@ test("classifyCarrier detects CN2 GIA vs GT vs mixed by hop order", () => {
     classifyCarrier([4134, 4134, 4809, 4809], "CT").code,
     "cn2_gt",
   );
+  assert.equal(classifyCarrier([4134, 4134, 4809, 4809], "CT").reason, "cn2_gt");
   // single 4809 hop
   assert.equal(classifyCarrier([174, 4809, -1, -1], "CT").code, "cn2_mixed");
+  assert.equal(classifyCarrier([174, 4809, -1, -1], "CT").reason, "cn2_single");
   // CTGNet
   assert.equal(classifyCarrier([174, 23764, 23764], "CT").code, "ctgnet");
   // plain 163
   assert.equal(classifyCarrier([174, 4134, 4134, -1], "CT").code, "163");
+  assert.equal(classifyCarrier([174, 4134, 4134, -1], "CT").reason, "c163");
   // only one delivery 163 hop → inconclusive
   assert.equal(
     classifyCarrier([174, 6939, 4134], "CT").code,

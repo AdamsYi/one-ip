@@ -22,6 +22,7 @@ import { IpLatency } from "./latency";
 import { LocationMap } from "./location-map";
 import { PerfectScoreEffects } from "./perfect-score-effects";
 import { ipProfile } from "./profile";
+import { ReturnRouteCard } from "./return-route-card";
 import { useIpLatency } from "./use-ip-latency";
 
 const IpProfileGraph = lazy(() => import("./profile-graph"));
@@ -466,6 +467,7 @@ export function IpDetails({
         </ToolCard>
       )}
       <ChinaRouteCard ip={d.ip} />
+      <ReturnRouteCard />
       <Suspense
         fallback={
           <ToolCard title={t("ip.bgpRouteTopology")}>
