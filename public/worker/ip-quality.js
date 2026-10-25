@@ -1,5 +1,5 @@
 import { geoIp, secondaryGeo } from "./geo.js";
-import { publicIp, upstream } from "./http.js";
+import { HttpError, publicIp, upstream } from "./http.js";
 import { ipType } from "./ip-type.js";
 
 // Aggregated IP reputation. Keyed sources (ipapi.is, proxycheck.io, AbuseIPDB)
@@ -164,8 +164,9 @@ async function fetchProxycheck(ip, key) {
 }
 
 async function fetchAbuseipdb(ip, key) {
+  // The current APIv2 expects ipAddress=, not the older documented ip=.
   const data = await upstream(
-    `https://api.abuseipdb.com/api/v2/check?ip=${encodeURIComponent(ip)}&maxAgeInDays=90`,
+    `https://api.abuseipdb.com/api/v2/check?ipAddress=${encodeURIComponent(ip)}&maxAgeInDays=90`,
     { headers: { Key: key, Accept: "application/json" } },
   );
   if (!data?.data || typeof data.data !== "object")
@@ -268,9 +269,13 @@ function rangeFromPrefix(prefix) {
   };
 }
 
-function sourceState(key, result, detail) {
-  const state = !key ? "skipped" : result ? "ok" : "unavailable";
-  return detail && result ? { state, ...detail(result) } : { state };
+function sourceState(key, result, detail, failure) {
+  if (result && detail) return { state: "ok", ...detail(result) };
+  if (result) return { state: "ok" };
+  if (!key) return { state: "skipped" };
+  return failure
+    ? { state: "unavailable", error: failure }
+    : { state: "unavailable" };
 }
 
 export async function ipQuality(
@@ -279,16 +284,27 @@ export async function ipQuality(
   requestOrigin = "https://ipquality.local",
 ) {
   ip = publicIp(ip);
-  const keyed = (key, run) =>
+  const failures = {};
+  const keyed = (name, key, run) =>
     key
       ? Promise.resolve()
           .then(run)
-          .catch(() => null)
+          .catch((error) => {
+            failures[name] =
+              error instanceof HttpError
+                ? `HTTP ${error.status}`
+                : String(error?.message ?? error).slice(0, 80);
+            return null;
+          })
       : null;
   const [ipapi, proxycheck, abuse, origin, ptr, geo] = await Promise.all([
-    keyed(env.IPAPI_IS_KEY, () => fetchIpapi(ip, env.IPAPI_IS_KEY)),
-    keyed(env.PROXYCHECK_KEY, () => fetchProxycheck(ip, env.PROXYCHECK_KEY)),
-    keyed(env.ABUSEIPDB_KEY, () => fetchAbuseipdb(ip, env.ABUSEIPDB_KEY)),
+    keyed("ipapi_is", env.IPAPI_IS_KEY, () => fetchIpapi(ip, env.IPAPI_IS_KEY)),
+    keyed("proxycheck", env.PROXYCHECK_KEY, () =>
+      fetchProxycheck(ip, env.PROXYCHECK_KEY),
+    ),
+    keyed("abuseipdb", env.ABUSEIPDB_KEY, () =>
+      fetchAbuseipdb(ip, env.ABUSEIPDB_KEY),
+    ),
     cymruOrigin(ip).catch(() => null),
     ptrLookup(ip).catch(() => null),
     // ipwho.is blocks Cloudflare Worker egress, so fall back to ip.sb.
@@ -480,22 +496,39 @@ export async function ipQuality(
     sources_ok: [ipapi, proxycheck, abuse, origin, geo, ipApi].filter(Boolean)
       .length,
     source_detail: {
-      ipapi_is: sourceState(env.IPAPI_IS_KEY, ipapi, (result) => ({
-        abuser_score:
-          typeof result?.company === "object"
-            ? result.company.abuser_score
-            : undefined,
-        company_type:
-          typeof result?.company === "object" ? result.company.type : undefined,
-      })),
-      proxycheck: sourceState(env.PROXYCHECK_KEY, proxycheck, (result) => ({
-        risk: result?.detections?.risk,
-        network_type: result?.network?.type,
-      })),
-      abuseipdb: sourceState(env.ABUSEIPDB_KEY, abuse, (result) => ({
-        abuse_confidence: result?.abuseConfidenceScore,
-        reports: result?.totalReports,
-      })),
+      ipapi_is: sourceState(
+        env.IPAPI_IS_KEY,
+        ipapi,
+        (result) => ({
+          abuser_score:
+            typeof result?.company === "object"
+              ? result.company.abuser_score
+              : undefined,
+          company_type:
+            typeof result?.company === "object"
+              ? result.company.type
+              : undefined,
+        }),
+        failures.ipapi_is,
+      ),
+      proxycheck: sourceState(
+        env.PROXYCHECK_KEY,
+        proxycheck,
+        (result) => ({
+          risk: result?.detections?.risk,
+          network_type: result?.network?.type,
+        }),
+        failures.proxycheck,
+      ),
+      abuseipdb: sourceState(
+        env.ABUSEIPDB_KEY,
+        abuse,
+        (result) => ({
+          abuse_confidence: result?.abuseConfidenceScore,
+          reports: result?.totalReports,
+        }),
+        failures.abuseipdb,
+      ),
       ip_api_fallback:
         ipapi || proxycheck || abuse
           ? { state: "skipped" }

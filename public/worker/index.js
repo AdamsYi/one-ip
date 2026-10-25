@@ -102,10 +102,19 @@ export default {
       }
       if (path.startsWith("/ip/quality/")) {
         const ip = publicIp(decodeURIComponent(path.slice(12)));
+        // The path-embedded version and source-config marker bust edge-cache
+        // entries from older response shapes or a changed secret lineup;
+        // cachedJson strips query strings from cache keys.
+        const sourceConfig = [
+          env.IPAPI_IS_KEY ? "i" : "",
+          env.PROXYCHECK_KEY ? "p" : "",
+          env.ABUSEIPDB_KEY ? "a" : "",
+        ].join("");
         return await cachedJson(
-          // The path-embedded version busts edge-cache entries from older
-          // response shapes; cachedJson strips query strings from cache keys.
-          new URL(`/api/ip/quality/v2/${encodeURIComponent(ip)}`, url.origin),
+          new URL(
+            `/api/ip/quality/v2${sourceConfig}/${encodeURIComponent(ip)}`,
+            url.origin,
+          ),
           21600,
           () => ipQuality(ip, env, url.origin),
           (data) => data.sources_ok >= 2,
