@@ -2,6 +2,7 @@ import { getAiStatus } from "./ai-status.js";
 import { cachedJson } from "./cache.js";
 import { challengeConfig, verifyChallenge } from "./challenges.js";
 import { getCloudStatus } from "./cloud-status.js";
+import { datacenter } from "./datacenter.js";
 import { cfGeo, geoIp, secondaryGeo } from "./geo.js";
 import { HttpError, inputJson, json, publicIp } from "./http.js";
 import { siteIcon } from "./icons.js";
@@ -11,6 +12,7 @@ import { ipQuality } from "./ip-quality.js";
 import { ipType } from "./ip-type.js";
 import { mapConfig } from "./map.js";
 import { startPing, pingResult, pingNodes } from "./ping.js";
+import { routeResult, routeVerdict } from "./route-verdict.js";
 import { normalizeStatus } from "./service-status.js";
 import services from "./services.json";
 import { lookupSubdomains, subdomainTarget } from "./subdomains.js";
@@ -119,6 +121,21 @@ export default {
           () => ipQuality(ip, env, url.origin),
           (data) => data.sources_ok >= 2,
         );
+      }
+      if (path.startsWith("/datacenter/")) {
+        const ip = publicIp(decodeURIComponent(path.slice(12)));
+        return await cachedJson(
+          new URL(`/api/datacenter/${encodeURIComponent(ip)}`, url.origin),
+          86400,
+          () => datacenter(ip),
+          (data) => data.known || Number.isInteger(data.asn),
+        );
+      }
+      if (path.startsWith("/route/result/"))
+        return json(await routeResult(path.slice(14), env, url.origin));
+      if (path.startsWith("/route/")) {
+        const ip = publicIp(decodeURIComponent(path.slice(7)));
+        return json(await routeVerdict(ip, env, url.origin));
       }
       if (path.startsWith("/ip/lookup/")) {
         const ip = publicIp(decodeURIComponent(path.slice(11)));

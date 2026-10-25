@@ -40,7 +40,7 @@ export function cidrMatch(ip, prefix) {
   return (ipv4ToInt(ip) & mask) === (ipv4ToInt(base) & mask);
 }
 
-function expandIpv6(ip) {
+export function expandIpv6(ip) {
   const [headRaw, tailRaw] = ip.split("::");
   const head = headRaw ? headRaw.split(":").filter(Boolean) : [];
   const tail = tailRaw !== undefined ? tailRaw.split(":").filter(Boolean) : [];
@@ -74,7 +74,7 @@ async function dohQuery(name, type) {
   return Array.isArray(data?.Answer) ? data.Answer : [];
 }
 
-async function ptrLookup(ip) {
+export async function ptrLookup(ip) {
   const labels = reverseLabels(ip);
   if (!labels) return null;
   const arpa = `${labels}.${ip.includes(":") ? "ip6" : "in-addr"}.arpa`;
@@ -93,7 +93,7 @@ function cymruRecord(answers) {
     .map((part) => part.trim());
 }
 
-async function cymruOrigin(ip) {
+export async function cymruOrigin(ip) {
   const labels = reverseLabels(ip);
   if (!labels) return null;
   const parts = cymruRecord(
@@ -111,7 +111,7 @@ async function cymruOrigin(ip) {
   };
 }
 
-async function cymruAsnInfo(asn) {
+export async function cymruAsnInfo(asn) {
   const parts = cymruRecord(await dohQuery(`AS${asn}.asn.cymru.com`, "TXT"));
   if (!parts || parts.length < 5) return null;
   const holder = parts[4];

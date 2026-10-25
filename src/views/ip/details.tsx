@@ -13,7 +13,9 @@ import type { Geo } from "@/lib/types";
 import { hideIpAtom } from "@/store/privacy";
 import { useAtom } from "jotai";
 import { Crown, Eye, EyeOff, ShieldAlert } from "lucide-react";
+import { ChinaRouteCard } from "./china-route-card";
 import { coffeeThreatLabels, type CoffeeLookup } from "./coffee";
+import { DatacenterCard } from "./datacenter-card";
 import { IpFacts } from "./field-help";
 import { IpLatency } from "./latency";
 import { LocationMap } from "./location-map";
@@ -193,6 +195,7 @@ export function IpDetails({
           inbound={inbound}
         />
       </Suspense>
+      <DatacenterCard ip={d.ip} />
       <div className="ip-dossier-grid">
         <ToolCard title={t("ip.networkAttributes")}>
           <IpFacts
@@ -460,6 +463,7 @@ export function IpDetails({
           )}
         </ToolCard>
       )}
+      <ChinaRouteCard ip={d.ip} />
       <Suspense
         fallback={
           <ToolCard title={t("ip.bgpRouteTopology")}>
