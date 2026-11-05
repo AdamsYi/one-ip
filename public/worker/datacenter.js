@@ -73,6 +73,7 @@ export async function datacenter(ip) {
     cost_tier: match.cost_tier,
     price_hint: match.price_hint,
     roles: match.roles,
+    notes: match.notes ?? null,
     verified: match.verified,
   };
 }

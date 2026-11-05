@@ -94,14 +94,14 @@ test("costProfile maps tiers to stars and monthly price ranges", () => {
     route({ CT: 5, CU: 5, CM: 5 }),
   );
   assert.equal(profile.tier, "premium");
-  assert.equal(profile.landingStars, 4);
+  assert.equal(profile.tierStars, 4);
   assert.equal(profile.routeStars, 5);
   assert.equal(profile.ipStars, 5);
   assert.equal(profile.monthlyLowUsd, 25);
   assert.equal(profile.monthlyHighUsd, 60);
   const cheap = costProfile({ trust_score: 40 }, dc("budget"), route({ CT: 2, CU: 2, CM: 2 }));
   assert.equal(cheap.tier, "budget");
-  assert.equal(cheap.landingStars, 1);
+  assert.equal(cheap.tierStars, 1);
   assert.equal(cheap.routeStars, 2);
   assert.equal(cheap.ipStars, 2);
   assert.equal(cheap.monthlyLowUsd, 1);

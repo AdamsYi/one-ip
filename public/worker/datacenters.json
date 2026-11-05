@@ -150,8 +150,9 @@
       "rdns": [],
       "cost_tier": "budget",
       "price_hint": "免费/WARP+",
-      "roles": ["WARP出口", "CDN中转"],
-      "verified": true
+      "roles": ["中转"],
+      "verified": true,
+      "notes": "WARP 出口、CDN 中转"
     },
     {
       "asn": 20473,
@@ -252,8 +253,9 @@
       "rdns": [],
       "cost_tier": "premium",
       "price_hint": "$50-170/年（CN2 GIA-E 约 $169/年）",
-      "roles": ["落地"],
-      "verified": true
+      "roles": ["中转入口"],
+      "verified": true,
+      "notes": "CN2 GIA 线路机：典型用法是中转入口，不适合当落地"
     },
     {
       "asn": 906,
@@ -265,8 +267,9 @@
       "rdns": ["host-by\\.dmit\\.com$", "[a-z0-9-]*\\.dmit\\.com$"],
       "cost_tier": "premium",
       "price_hint": "$36-300/年",
-      "roles": ["落地（CN2 GIA/CMIN2）"],
-      "verified": true
+      "roles": ["中转入口"],
+      "verified": true,
+      "notes": "CN2 GIA / CMIN2 线路机：典型用法是中转入口"
     },
     {
       "asn": 36352,
@@ -535,8 +538,9 @@
       "rdns": [],
       "cost_tier": "high",
       "price_hint": "N/A（骨干）",
-      "roles": ["骨干/IPLC承载"],
-      "verified": true
+      "roles": ["骨干"],
+      "verified": true,
+      "notes": "IPLC / 专线承载"
     },
     {
       "asn": 58453,
@@ -548,8 +552,9 @@
       "rdns": [],
       "cost_tier": "high",
       "price_hint": "N/A",
-      "roles": ["IEPL/IPLC入口", "落地"],
-      "verified": true
+      "roles": ["中转入口", "落地"],
+      "verified": true,
+      "notes": "IEPL / IPLC 承载"
     },
     {
       "asn": 23764,
@@ -561,8 +566,9 @@
       "rdns": [],
       "cost_tier": "premium",
       "price_hint": "N/A",
-      "roles": ["落地（CTG精品）"],
-      "verified": true
+      "roles": ["骨干"],
+      "verified": true,
+      "notes": "CTG 精品网承载"
     },
     {
       "asn": 983,
@@ -587,8 +593,9 @@
       "rdns": ["[a-z0-9.-]+\\.2iij\\.net$", "[a-z0-9.-]+\\.iij4u\\.or\\.jp$"],
       "cost_tier": "premium",
       "price_hint": "N/A",
-      "roles": ["家宽/商宽落地（JP）"],
-      "verified": true
+      "roles": ["家宽落地"],
+      "verified": true,
+      "notes": "日本家宽 / 商宽"
     },
     {
       "asn": 2914,
@@ -613,8 +620,9 @@
       "rdns": ["[a-z0-9.-]+\\.(au-net|dion)\\.ne\\.jp$"],
       "cost_tier": "premium",
       "price_hint": "N/A",
-      "roles": ["家宽落地（JP）"],
-      "verified": true
+      "roles": ["家宽落地"],
+      "verified": true,
+      "notes": "日本"
     },
     {
       "asn": 17676,
@@ -626,8 +634,9 @@
       "rdns": ["[a-z0-9.-]+\\.bbtec\\.net$"],
       "cost_tier": "premium",
       "price_hint": "N/A",
-      "roles": ["家宽落地（JP）"],
-      "verified": true
+      "roles": ["家宽落地"],
+      "verified": true,
+      "notes": "日本"
     },
     {
       "asn": 174,
@@ -639,7 +648,7 @@
       "rdns": [],
       "cost_tier": "budget",
       "price_hint": "N/A",
-      "roles": ["骨干transit"],
+      "roles": ["骨干"],
       "verified": true
     },
     {
@@ -652,7 +661,7 @@
       "rdns": [],
       "cost_tier": "mid",
       "price_hint": "N/A",
-      "roles": ["骨干transit"],
+      "roles": ["骨干"],
       "verified": true
     },
     {

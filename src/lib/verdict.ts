@@ -177,7 +177,7 @@ export function verdict(
 
 export interface CostProfile {
   tier: CostTier | null;
-  landingStars: number;
+  tierStars: number;
   routeStars: number;
   ipStars: number;
   monthlyLowUsd: number | null;
@@ -204,11 +204,11 @@ export function costProfile(
     rank === null ? 0 : Math.max(1, Math.min(5, Math.round((rank / 5) * 5)));
   const ipStars =
     trust === null ? 0 : Math.max(1, Math.min(5, Math.ceil(trust / 20)));
-  const landingStars = tier ? TIER_RANK[tier] : 0;
+  const tierStars = tier ? TIER_RANK[tier] : 0;
   const [low, high] = tier ? TIER_PRICE[tier] : [0, 0];
   return {
     tier,
-    landingStars,
+    tierStars,
     routeStars,
     ipStars,
     monthlyLowUsd: tier ? low : null,

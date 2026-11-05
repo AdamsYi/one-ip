@@ -19,6 +19,7 @@ interface DatacenterEntry {
   cost_tier?: "budget" | "mid" | "high" | "premium" | null;
   price_hint?: string;
   roles?: string[];
+  notes?: string | null;
   verified?: boolean;
 }
 
@@ -89,6 +90,9 @@ export function DatacenterCard({ ip }: { ip: string }) {
     return (
       <>
         <IpFacts rows={rows} />
+        {data.notes && (
+          <p className="mt-2 text-xs text-muted-foreground">{data.notes}</p>
+        )}
         {!data.verified && (
           <p className="mt-2 text-xs text-muted-foreground">
             {t("ip.datacenter.unverifiedNote")}

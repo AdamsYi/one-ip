@@ -40,7 +40,9 @@ test("datacenter matches by ASN and reports the catalog entry", async (t) => {
   assert.equal(data.brand, "BandwagonHost");
   assert.ok(data.aliases.includes("搬瓦工"));
   assert.equal(data.cost_tier, "premium");
-  assert.ok(data.roles.includes("落地"));
+  // 线路机（CN2 GIA）标注为中转入口，不是落地。
+  assert.deepEqual(data.roles, ["中转入口"]);
+  assert.match(data.notes, /中转/);
   assert.equal(data.asn, 25820);
   assert.equal(data.rdns, "95.169.12.201.16clouds.com");
 });

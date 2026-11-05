@@ -82,10 +82,7 @@ export function CostCard({
     route,
   );
   const rows: [string, ReactNode][] = [
-    [
-      t("ip.cost.landing"),
-      <Stars key="landing" count={profile.landingStars} />,
-    ],
+    [t("ip.cost.landing"), <Stars key="landing" count={profile.tierStars} />],
     [t("ip.cost.route"), <Stars key="route" count={profile.routeStars} />],
     [t("ip.cost.ip"), <Stars key="ip" count={profile.ipStars} />],
   ];
