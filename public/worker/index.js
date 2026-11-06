@@ -1,4 +1,5 @@
 import { getAiStatus } from "./ai-status.js";
+import { fetchSubscription } from "./airport.js";
 import { cachedJson } from "./cache.js";
 import { challengeConfig, verifyChallenge } from "./challenges.js";
 import { getCloudStatus } from "./cloud-status.js";
@@ -53,7 +54,9 @@ export default {
       if (path === "/dns" || path.startsWith("/dns/"))
         throw new HttpError(404, "接口不存在");
       const isAction =
-        path === "/ping/start" || path === "/browser/challenges/verify";
+        path === "/ping/start" ||
+        path === "/browser/challenges/verify" ||
+        path === "/airport/subscription";
       if (
         (isAction && request.method !== "POST") ||
         (!isAction && request.method !== "GET")
@@ -69,6 +72,8 @@ export default {
         return json(
           await verifyChallenge(await inputJson(request), env, url.hostname),
         );
+      if (path === "/airport/subscription")
+        return json(await fetchSubscription(await inputJson(request)));
       if (path === "/map/config") return json(mapConfig(env));
       if (path.startsWith("/map/tile/"))
         return await mapTile(new URL(`/api${path}`, url.origin));
@@ -127,7 +132,7 @@ export default {
       if (path.startsWith("/datacenter/")) {
         const ip = publicIp(decodeURIComponent(path.slice(12)));
         return await cachedJson(
-          new URL(`/api/datacenter/${encodeURIComponent(ip)}`, url.origin),
+          new URL(`/api/datacenter/v2/${encodeURIComponent(ip)}`, url.origin),
           86400,
           () => datacenter(ip),
           (data) => data.known || Number.isInteger(data.asn),

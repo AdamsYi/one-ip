@@ -78,7 +78,11 @@ export function target(value) {
     throw new HttpError(400, "请输入公网域名，不包含协议、路径或端口");
   return normalized;
 }
-async function boundedText(response, maxBytes = 2_000_000, errorStatus = 502) {
+export async function boundedText(
+  response,
+  maxBytes = 2_000_000,
+  errorStatus = 502,
+) {
   const reader = response.body?.getReader();
   if (!reader) throw new HttpError(errorStatus, "JSON 内容为空");
   let size = 0;

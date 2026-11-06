@@ -14,7 +14,14 @@ import { useAvailableTools } from "@/hooks/use-available-tools";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/hooks/use-theme";
 import { t } from "@/i18n";
-import { Search, Globe, Cable, Activity, Sparkles } from "lucide-react";
+import {
+  Search,
+  Globe,
+  Cable,
+  Activity,
+  Sparkles,
+  PlaneTakeoff,
+} from "lucide-react";
 import { Tabs } from "radix-ui";
 import { Toaster } from "sonner";
 import { DesktopNavigation } from "./desktop-navigation";
@@ -28,6 +35,7 @@ const currentYear = new Date().getFullYear();
 
 const menuIcons = {
   "/": Search,
+  "/airport/": PlaneTakeoff,
   "/browser/": Globe,
   "/network/": Cable,
   "/ai/": Sparkles,

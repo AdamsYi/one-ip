@@ -1,39 +1,9 @@
-import catalog from "./datacenters.json" with { type: "json" };
 import { cymruAsnInfo, cymruOrigin, ptrLookup } from "./ip-quality.js";
-
-const entries = catalog.entries;
-
-function matchByAsn(asn) {
-  if (!Number.isInteger(asn)) return undefined;
-  return entries.find((entry) => entry.asn === asn);
-}
-
-function matchByRdns(ptr) {
-  if (typeof ptr !== "string" || !ptr) return undefined;
-  for (const entry of entries) {
-    for (const pattern of entry.rdns ?? []) {
-      try {
-        if (new RegExp(pattern, "i").test(ptr)) return entry;
-      } catch {
-        /* skip malformed pattern */
-      }
-    }
-  }
-  return undefined;
-}
-
-async function matchByHolder(asn) {
-  if (!Number.isInteger(asn)) return undefined;
-  const info = await cymruAsnInfo(asn).catch(() => null);
-  if (!info?.holder) return undefined;
-  const holder = info.holder.toLowerCase();
-  return entries.find((entry) => {
-    const keys = [entry.holder, entry.brand, ...(entry.aliases ?? [])]
-      .filter(Boolean)
-      .map((value) => value.toLowerCase());
-    return keys.some((key) => key.length >= 6 && holder.includes(key));
-  });
-}
+import {
+  matchByAsn,
+  matchByRdns,
+  matchByHolder,
+} from "../../src/lib/datacenter-match.ts";
 
 export async function datacenter(ip) {
   const [origin, ptr] = await Promise.all([
@@ -47,8 +17,10 @@ export async function datacenter(ip) {
     match = matchByRdns(ptr);
     if (match) method = "rdns";
   }
-  if (!match && asn) {
-    match = await matchByHolder(asn);
+  // The holder name also labels uncatalogued networks in airport audits.
+  const info = !match && asn ? await cymruAsnInfo(asn).catch(() => null) : null;
+  if (!match && info) {
+    match = matchByHolder(info.holder);
     if (match) method = "holder";
   }
   const base = {
@@ -56,6 +28,9 @@ export async function datacenter(ip) {
     asn,
     prefix: origin?.prefix ?? null,
     rdns: ptr ?? null,
+    // Registry country of the announcing network (RIR allocation, not geo).
+    cc: origin?.cc ? origin.cc.toUpperCase() : null,
+    holder: info?.holder ?? null,
   };
   if (!match)
     return {

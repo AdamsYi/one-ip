@@ -519,5 +519,6 @@
   "ip.route.grade.optimized": "优化线路",
   "ip.route.grade.standard": "普通线路",
   "ip.route.grade.unknown": "未定",
-  "ip.route.measuringShort": "实测中…"
+  "ip.route.measuringShort": "实测中…",
+  "ip.route.relayHint": "这里测的是出口 IP。中转/专线节点的实际线路取决于入口，请用"
 }

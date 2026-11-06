@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { CopyButton } from "@/components/copy-button";
 import { ToolCard } from "@/components/toolkit";
 import { t, type MessageKey } from "@/i18n";
@@ -209,6 +210,15 @@ export function ChinaRouteCard({ ip }: { ip: string }) {
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         {t("ip.route.disclaimer")}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("ip.route.relayHint")}{" "}
+        <Link
+          to="/airport"
+          className="text-primary underline-offset-2 hover:underline"
+        >
+          {t("navigation.airport")}
+        </Link>
       </p>
     </ToolCard>
   );

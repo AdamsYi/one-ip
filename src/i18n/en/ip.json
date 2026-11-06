@@ -519,5 +519,6 @@
   "ip.route.grade.optimized": "Optimized",
   "ip.route.grade.standard": "Standard",
   "ip.route.grade.unknown": "Unknown",
-  "ip.route.measuringShort": "Measuring…"
+  "ip.route.measuringShort": "Measuring…",
+  "ip.route.relayHint": "This measures the exit IP. For relay or private-line nodes the real route depends on the entry; use"
 }

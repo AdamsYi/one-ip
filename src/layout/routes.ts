@@ -7,6 +7,11 @@ export const navigationRoutes = [
     label: t("navigation.overview"),
     short: t("navigation.overview"),
   },
+  {
+    value: "/airport/",
+    label: t("navigation.airport"),
+    short: t("navigation.airport"),
+  },
   { value: "/ai/", label: t("navigation.aiChecks"), short: "AI" },
   {
     value: "/status/",
@@ -76,6 +81,7 @@ export const legacyRoutes: Record<string, string> = {
 export function activeNavigationRoute(pathname: string) {
   const path = pathname.replace(/\/+$/, "") || "/";
   if (path === "/") return "/";
+  if (path === "/airport") return "/airport/";
   for (const [group, routes] of Object.entries(toolGroups)) {
     if (path === `/${group}` || routes.some((route) => route.path === path))
       return `/${group}/`;

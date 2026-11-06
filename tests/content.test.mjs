@@ -90,7 +90,8 @@ test("tool routes select their grouped navigation", () => {
     assert.equal(activeNavigationRoute(path), "/network/");
   assert.equal(activeNavigationRoute("/network/whois/"), "/network/");
   assert.equal(activeNavigationRoute("/ai/claude/"), "/ai/");
-  assert.equal(navigationRoutes.length, 5);
+  assert.equal(navigationRoutes.length, 6);
+  assert.equal(activeNavigationRoute("/airport"), "/airport/");
 });
 
 test("all module links map to exactly one parent and legacy paths redirect to canonical destinations", () => {
