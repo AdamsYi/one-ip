@@ -249,7 +249,13 @@ export function ChinaRouteCard({ ip }: { ip: string }) {
         </div>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        {t("ip.route.disclaimer")}
+        {t("ip.route.disclaimer")} ·{" "}
+        <Link
+          to="/methodology"
+          className="text-primary underline-offset-2 hover:underline"
+        >
+          {t("methodology.link")}
+        </Link>
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
         {t("ip.route.relayHint")}{" "}

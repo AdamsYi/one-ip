@@ -215,6 +215,10 @@ export function AppLayout() {
           </UnderlineHover>{" "}
           ·{" "}
           <UnderlineHover asChild>
+            <Link to="/methodology">{t("methodology.link")}</Link>
+          </UnderlineHover>{" "}
+          ·{" "}
+          <UnderlineHover asChild>
             <Link to="/terms">{t("policy.terms")}</Link>
           </UnderlineHover>{" "}
           ·{" "}
