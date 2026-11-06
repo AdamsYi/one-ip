@@ -32,6 +32,7 @@ export const navigationRoutes = [
 export const toolGroups = {
   network: [
     { path: "/network/connectivity", label: t("common.connectivityEgress") },
+    { path: "/network/rules", label: t("rules.title") },
     { path: "/network/speedtest", label: t("speedtest.title") },
     { path: "/network/dns", label: t("common.dnsEgress") },
     { path: "/network/cdn", label: t("navigation.cdnNodes") },

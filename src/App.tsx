@@ -37,6 +37,7 @@ const ApiUsagePage = lazy(() => import("@/views/api-usage"));
 const PolicyPage = lazy(() => import("@/views/policy"));
 const AirportPage = lazy(() => import("@/views/airport"));
 const MethodologyPage = lazy(() => import("@/views/methodology"));
+const RulesPage = lazy(() => import("@/views/rules"));
 function Redirect({ to }: { to: string }) {
   const { search, hash } = useLocation();
   const { ip } = useParams();
@@ -74,6 +75,7 @@ export function App() {
           <Route path="subdomains" element={<SubdomainsPage />} />
           <Route path="whois" element={<WhoisPage />} />
           <Route path="connectivity" element={<LinkPage />} />
+          <Route path="rules" element={<RulesPage />} />
           <Route path="ping" element={<PingPage />} />
           <Route path="speedtest" element={<SpeedtestPage />} />
           <Route path="cdn" element={<CdnPage />} />

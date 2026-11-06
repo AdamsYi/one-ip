@@ -13,6 +13,7 @@ import { ArrowUpRight } from "lucide-react";
 const descriptions: Record<string, string> = {
   "/network/speedtest": t("speedtest.description"),
   "/network/ip": t("overview.tsx.lookUpLocationIspAsnAndMapPosition"),
+  "/network/rules": t("rules.description"),
   "/network/subdomains": t("subdomains.description"),
   "/network/whois": t("overview.tsx.viewDomainIpAndAsRegistrationData"),
   "/network/connectivity": t(
