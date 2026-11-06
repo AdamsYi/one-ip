@@ -27,6 +27,7 @@ interface CarrierVerdict {
 
 interface RouteVerdictData {
   status: "finished" | "pending" | "degraded";
+  domestic?: boolean;
   carriers?: Partial<Record<"CT" | "CU" | "CM", CarrierVerdict>>;
 }
 
@@ -180,11 +181,17 @@ export function VerdictHero({ geo }: { geo: Geo }) {
             {t("ip.route.toTargetNote")}
           </span>
         </p>
-        <RouteGradeTiles
-          carriers={route?.carriers}
-          pending={!route || route.status === "pending"}
-          showReason={false}
-        />
+        {route?.domestic ? (
+          <p className="text-sm text-muted-foreground">
+            {t("ip.route.domesticEntry")}
+          </p>
+        ) : (
+          <RouteGradeTiles
+            carriers={route?.carriers}
+            pending={!route || route.status === "pending"}
+            showReason={false}
+          />
+        )}
       </div>
     </Card>
   );

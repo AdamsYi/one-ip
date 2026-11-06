@@ -66,8 +66,9 @@ test("parse nexttrace output and classify each carrier", () => {
   const verdicts = classifyParsedTraces(traces);
   const ct = verdicts.filter((v) => v.carrier === "CT");
   assert.equal(ct.length, 1);
-  // two CT traces merged: gia (rank 5) + gt (rank 3) → dynamic mixed
-  assert.equal(ct[0].code, "dynamic_mixed");
+  // two CT traces merged: gia (rank 5) + gt (rank 3) → varies by location
+  assert.equal(ct[0].code, "varies");
+  assert.deepEqual(ct[0].reasonValues, [2, 3, 5]);
   const cu = verdicts.find((v) => v.carrier === "CU");
   assert.equal(cu?.code, "4837");
   assert.equal(cu?.reason, "cu4837");
@@ -90,8 +91,10 @@ test("parse plain traceroute with CIDR fallback when AS is absent", () => {
   assert.equal(verdicts.length, 1);
   assert.equal(verdicts[0].carrier, "CT");
   // hops: -1, 4809 (from 59.43.0.1 CIDR), 4134 (202.97), delivery
-  // one 4809 hop + a 163 hop → cn2_single mixed
+  // one CN2 hop then a single 202.97 delivery hop on the user side → too
+  // little CN2 evidence to call GIA
   assert.equal(verdicts[0].code, "cn2_mixed");
+  assert.equal(verdicts[0].reason, "cn2_single");
   assert.ok(verdicts[0].hops.some((hop) => hop.asn === 4809));
   assert.ok(verdicts[0].hops.some((hop) => hop.asn === 4134));
 });

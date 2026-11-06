@@ -52,8 +52,6 @@ export function parseTraceOutput(text: string): ParsedTrace[] {
     const asnText = hopMatch[3]?.match(/AS(\d{1,10})/);
     const asn = asnText ? Number(asnText[1]) : lookupChinaRoute(ip);
     if (current.hops.length >= 20) continue;
-    // The final hop toward the target stays in the path: its delivery ASN
-    // participates in the GIA/GT ordering rules.
     current.hops.push({ asn: Number.isInteger(asn) ? asn : null, ip });
   }
   return traces.filter((trace) => trace.hops.length > 0);
@@ -97,9 +95,8 @@ export function classifyParsedTraces(
   }
   const verdicts: ReturnRouteVerdict[] = [];
   for (const [carrier, list] of byCarrier) {
-    const paths = list.map((trace) => trace.hops.map((hop) => hop.asn ?? -1));
     const merged = mergeVerdicts(
-      paths.map((path) => classifyCarrier(path, carrier)),
+      list.map((trace) => classifyCarrier(trace.hops, carrier)),
     );
     verdicts.push({
       carrier,

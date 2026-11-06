@@ -7,6 +7,7 @@ import { endpoint } from "@/lib/network";
 import { useQuery } from "@tanstack/react-query";
 import {
   RouteGradeTiles,
+  lineLabel,
   reasonText,
   type CarrierKey,
   type GradeVerdict,
@@ -16,13 +17,14 @@ export { reasonText };
 
 interface CarrierVerdict extends GradeVerdict {
   probes: number;
-  hits: Record<string, number>;
-  note?: string;
+  rtt?: number | null;
+  loss?: number | null;
 }
 
 interface Hop {
   asn: number | null;
   ip: string | null;
+  backbone?: string | null;
 }
 
 interface RouteVerdictData {
@@ -30,7 +32,11 @@ interface RouteVerdictData {
   asn: number | null;
   status: "finished" | "pending" | "degraded";
   reason?: string;
-  method?: "asn" | "mtr";
+  method?: "domestic" | "mtr";
+  domestic?: boolean;
+  peak?: boolean;
+  beijing_hour?: number;
+  packets?: number;
   carriers?: Partial<Record<CarrierKey, CarrierVerdict>>;
   probes?: {
     city: string | null;
@@ -38,7 +44,9 @@ interface RouteVerdictData {
     asn: number | null;
     carrier: string | null;
     status: string;
-    path_asns: number[];
+    rtt?: number | null;
+    loss?: number | null;
+    code?: string;
     hops?: Hop[];
   }[];
 }
@@ -49,17 +57,29 @@ const CARRIER_LABEL: Record<CarrierKey, MessageKey> = {
   CM: "ip.route.carrierCM",
 };
 
-// China backbone ASN → chip color; everything else stays neutral.
-const ASN_CLASS: Record<number, string> = {
-  4809: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
-  23764: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
-  9929: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-  10099: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-  58807: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  4134: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-  4837: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-  58453: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-  9808: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+// Backbone of a hop → chip color (premium lines warm, ordinary cool).
+const BACKBONE_CLASS: Record<string, string> = {
+  cn2: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+  ctgnet: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+  cuii: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+  cmin2: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  c163: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  cu169: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  cug: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  cmi: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  cmnet: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+};
+
+const BACKBONE_LABEL: Record<string, string> = {
+  cn2: "CN2",
+  c163: "163",
+  ctgnet: "CTG",
+  cuii: "9929",
+  cu169: "169",
+  cug: "CUG",
+  cmin2: "CMIN2",
+  cmi: "CMI",
+  cmnet: "CMNET",
 };
 
 export function HopChain({ hops }: { hops: Hop[] }) {
@@ -67,7 +87,12 @@ export function HopChain({ hops }: { hops: Hop[] }) {
     <span className="flex flex-wrap items-center gap-1">
       {hops.map((hop, index) => {
         const asn = hop.asn;
-        const label = asn && asn > 0 ? `AS${asn}` : "·";
+        const backbone = hop.backbone ?? null;
+        const label = backbone
+          ? BACKBONE_LABEL[backbone]
+          : asn && asn > 0
+            ? `AS${asn}`
+            : "·";
         return (
           <span key={index} className="flex items-center gap-1">
             {index > 0 && (
@@ -76,10 +101,14 @@ export function HopChain({ hops }: { hops: Hop[] }) {
               </span>
             )}
             <span
-              title={hop.ip ?? undefined}
+              title={
+                [hop.ip, asn && asn > 0 ? `AS${asn}` : null]
+                  .filter(Boolean)
+                  .join(" · ") || undefined
+              }
               className={`rounded px-1.5 py-0.5 font-mono text-[11px] ${
-                asn && ASN_CLASS[asn]
-                  ? ASN_CLASS[asn]
+                backbone
+                  ? BACKBONE_CLASS[backbone]
                   : "bg-muted text-muted-foreground"
               }`}
             >
@@ -101,18 +130,16 @@ function PathDetails({ data }: { data: RouteVerdictData }) {
           (probe) => probe.carrier === key && (probe.hops?.length ?? 0) > 0,
         );
         if (!verdict && !probes.length) return null;
-        const hits = verdict
-          ? Object.entries(verdict.hits)
-              .filter(([, count]) => count > 0)
-              .map(([asn, count]) => `AS${asn} ×${count}`)
-              .join("、")
-          : "";
+        const stats =
+          verdict && verdict.rtt != null
+            ? t("ip.route.statsLine", [verdict.rtt, verdict.loss ?? 0])
+            : "";
         return (
           <div key={key} className="flex flex-col gap-1.5">
             <span className="text-xs font-medium">
               {t(CARRIER_LABEL[key])}
               <span className="ml-2 font-normal text-muted-foreground">
-                {hits || t("ip.route.noBackboneSeen")}
+                {stats}
               </span>
             </span>
             {probes.map((probe, index) => (
@@ -123,6 +150,10 @@ function PathDetails({ data }: { data: RouteVerdictData }) {
                 <span className="text-xs text-muted-foreground">
                   {probe.city ?? probe.network}
                   {probe.asn ? ` · AS${probe.asn}` : ""}
+                  {probe.code ? ` · ${lineLabel(probe.code)}` : ""}
+                  {probe.rtt != null
+                    ? ` · ${t("ip.route.statsLine", [probe.rtt, probe.loss ?? 0])}`
+                    : ""}
                 </span>
                 <HopChain hops={probe.hops ?? []} />
               </div>
@@ -178,8 +209,17 @@ export function ChinaRouteCard({ ip }: { ip: string }) {
             : t("ip.route.unavailable")}
           {data.asn ? ` · AS${data.asn}` : ""}
         </p>
+      ) : data?.domestic ? (
+        <p className="text-sm">{t("ip.route.domesticEntry")}</p>
       ) : (
         <RouteGradeTiles carriers={data?.carriers} pending={pending} />
+      )}
+      {data?.status === "finished" && data.method === "mtr" && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {t(data.peak ? "ip.route.measuredPeak" : "ip.route.measuredOffPeak", [
+            data.beijing_hour ?? "?",
+          ])}
+        </p>
       )}
       {data?.status === "finished" && hasPaths && (
         <div className="mt-3">

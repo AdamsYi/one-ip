@@ -2,47 +2,42 @@ import { HttpError, json, publicIp, upstream } from "./http.js";
 import { cymruOrigin, expandIpv6 } from "./ip-quality.js";
 import {
   classifyCarrier,
+  hopBackbone,
   lookupChinaRoute,
   mergeVerdicts,
 } from "../../src/lib/china-route-rules.ts";
 
 export { classifyCarrier, lookupChinaRoute, mergeVerdicts };
 
-// When the IP itself is announced by one of these networks, the verdict for
-// that carrier is direct evidence without any measurement.
-const CHINA_ASN_VERDICTS = {
-  4809: { carrier: "CT", code: "cn2", rank: 3 },
-  23764: { carrier: "CT", code: "ctgnet", rank: 4 },
-  4134: { carrier: "CT", code: "163", rank: 2 },
-  9929: { carrier: "CU", code: "9929", rank: 5 },
-  10099: { carrier: "CU", code: "cug", rank: 3 },
-  4837: { carrier: "CU", code: "4837", rank: 2 },
-  58807: { carrier: "CM", code: "cmin2", rank: 5 },
-  58453: { carrier: "CM", code: "cmi", rank: 2 },
-  9808: { carrier: "CM", code: "cmnet", rank: 2 },
-};
-
+// Probe ASNs per carrier. Only eyeball (home/provincial) networks count:
+// IDC probes such as AS23724 may sit directly on CN2 and fake a GIA path.
 const PROBE_CARRIER_ASNS = {
   4134: "CT",
-  4808: "CT",
-  4809: "CT",
-  4811: "CT",
   4812: "CT",
+  4811: "CT",
   4837: "CU",
-  9929: "CU",
-  10099: "CU",
+  4808: "CU",
   17621: "CU",
+  17622: "CU",
   9808: "CM",
   56040: "CM",
+  56041: "CM",
+  56042: "CM",
+  56044: "CM",
   56046: "CM",
+  56047: "CM",
   56048: "CM",
-  58453: "CM",
-  58807: "CM",
+  24400: "CM",
 };
 
-const CHINA_BACKBONE_ASNS = new Set([
-  4809, 4134, 23764, 9929, 10099, 4837, 58807, 58453, 9808,
-]);
+// Overseas branches of Chinese clouds register some prefixes as CN; they are
+// not mainland entries.
+const OVERSEAS_CN_ASNS = new Set([45102, 132203, 136907, 135377, 55967]);
+// Carrier international / premium networks that announce overseas space.
+const CARRIER_OVERSEAS_ASNS = new Set([4809, 23764, 10099, 58807, 58453]);
+
+const PACKETS = 10;
+const PROBES_PER_CARRIER = 3;
 
 export function cachePrefix(ip) {
   if (ip.includes(":")) {
@@ -61,12 +56,15 @@ export function cachePrefix(ip) {
 
 function detectCarrier(probe) {
   const asn = Number.isInteger(probe?.asn) ? probe.asn : null;
-  if (asn && PROBE_CARRIER_ASNS[asn]) return PROBE_CARRIER_ASNS[asn];
-  const network = String(probe?.network ?? "");
-  if (/telecom|chinanet/i.test(network)) return "CT";
-  if (/unicom/i.test(network)) return "CU";
-  if (/mobile|cmnet|cmcc/i.test(network)) return "CM";
-  return null;
+  const tags = Array.isArray(probe?.tags) ? probe.tags : [];
+  if (tags.includes("datacenter-network")) return null;
+  return asn ? (PROBE_CARRIER_ASNS[asn] ?? null) : null;
+}
+
+/** Beijing hour and whether it falls in the 20:00–23:59 evening peak. */
+export function beijingTime(date = new Date()) {
+  const hour = (date.getUTCHours() + 8) % 24;
+  return { beijing_hour: hour, peak: hour >= 20 };
 }
 
 async function readCache(key) {
@@ -97,11 +95,11 @@ async function startMtr(ip, env) {
       type: "mtr",
       target: ip,
       locations: [
-        { magic: "AS4134", limit: 2 },
-        { magic: "AS4837", limit: 2 },
-        { magic: "AS9808", limit: 2 },
+        { magic: "AS4134", limit: PROBES_PER_CARRIER },
+        { magic: "AS4837", limit: PROBES_PER_CARRIER },
+        { magic: "AS9808", limit: PROBES_PER_CARRIER },
       ],
-      measurementOptions: { protocol: "ICMP", packets: 3 },
+      measurementOptions: { protocol: "ICMP", packets: PACKETS },
       inProgressUpdates: false,
     }),
   });
@@ -120,13 +118,17 @@ async function fetchMeasurement(id, env) {
   );
 }
 
-function countHits(paths) {
-  const hits = {};
-  for (const path of paths)
-    for (const asn of path)
-      if (CHINA_BACKBONE_ASNS.has(asn)) hits[asn] = (hits[asn] ?? 0) + 1;
-  return hits;
+function median(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
+
+const round1 = (value) =>
+  typeof value === "number" && Number.isFinite(value)
+    ? Math.round(value * 10) / 10
+    : null;
 
 export function classifyMeasurement(data) {
   const carriers = {};
@@ -135,40 +137,56 @@ export function classifyMeasurement(data) {
   for (const result of data.results ?? []) {
     const probe = result.probe ?? {};
     const carrier = detectCarrier(probe);
-    const hops = result.result?.hops ?? [];
-    const hopAsns = hops.map((hop) => {
+    const rawHops = (result.result?.hops ?? []).slice(0, 30);
+    const hops = rawHops.map((hop) => {
       const asn = Array.isArray(hop.asn)
         ? hop.asn.find((value) => Number.isInteger(value))
         : hop.asn;
-      if (Number.isInteger(asn)) return asn;
-      return lookupChinaRoute(hop.resolvedAddress) ?? -1;
+      const ip =
+        typeof hop.resolvedAddress === "string" ? hop.resolvedAddress : null;
+      return {
+        ip,
+        asn: Number.isInteger(asn) ? asn : (lookupChinaRoute(ip) ?? null),
+        backbone: hopBackbone({ ip, asn }),
+      };
     });
+    // End-to-end stats (which include the return leg) only count when the
+    // final hop really is the target; otherwise they belong to a middle hop.
+    const final = rawHops.at(-1);
+    const last =
+      final?.resolvedAddress === data.target && final?.stats?.rcv > 0
+        ? final
+        : null;
+    const status = result.result?.status ?? "unknown";
     probes.push({
-      city: probe.location?.city ?? null,
+      city: probe.city ?? probe.location?.city ?? null,
       network: probe.network ?? null,
       asn: Number.isInteger(probe.asn) ? probe.asn : null,
       carrier,
-      status: result.result?.status ?? "unknown",
-      path_asns: hopAsns.slice(0, 14),
-      hops: hops.slice(0, 14).map((hop, index) => ({
-        asn: hopAsns[index],
-        ip:
-          typeof hop.resolvedAddress === "string" ? hop.resolvedAddress : null,
-      })),
+      status,
+      rtt: round1(last?.stats?.avg),
+      loss: round1(last?.stats?.loss),
+      hops,
     });
-    if (carrier && result.result?.status === "finished")
-      byCarrier[carrier].push(hopAsns);
+    if (carrier && status === "finished") {
+      const item = classifyCarrier(hops, carrier, "forward");
+      probes[probes.length - 1].code = item.code;
+      byCarrier[carrier].push(item);
+    }
   }
   for (const carrier of ["CT", "CU", "CM"]) {
-    const paths = byCarrier[carrier];
-    if (!paths.length) continue;
-    const merged = mergeVerdicts(
-      paths.map((path) => classifyCarrier(path, carrier)),
+    const verdicts = byCarrier[carrier];
+    if (!verdicts.length) continue;
+    const stats = probes.filter(
+      (probe) => probe.carrier === carrier && probe.status === "finished",
     );
     carriers[carrier] = {
-      ...merged,
-      probes: paths.length,
-      hits: countHits(paths),
+      ...mergeVerdicts(verdicts),
+      probes: verdicts.length,
+      rtt: round1(
+        median(stats.map((probe) => probe.rtt).filter((v) => v !== null)),
+      ),
+      loss: round1(Math.max(0, ...stats.map((probe) => probe.loss ?? 0))),
     };
   }
   return { carriers, probes };
@@ -181,7 +199,7 @@ export async function routeVerdict(
 ) {
   ip = publicIp(ip);
   const key = new Request(
-    `${requestOrigin}/api/route/v2/${encodeURIComponent(cachePrefix(ip))}`,
+    `${requestOrigin}/api/route/v3/${encodeURIComponent(cachePrefix(ip))}`,
   );
   const cached = await readCache(key);
   if (cached) {
@@ -204,31 +222,28 @@ export async function routeVerdict(
     prefix: origin?.prefix ?? null,
     direction: "to_target",
   };
-  const direct = asn ? CHINA_ASN_VERDICTS[asn] : null;
-  if (direct) {
+  // A mainland address means the node itself sits in China: it is a domestic
+  // relay entry, so a China → node "route" says nothing about line quality.
+  // Carrier international networks (CN2/CMI/CUG…) register overseas space
+  // under CN too, so they are measured like any overseas host.
+  const mainland =
+    origin?.cc === "cn" &&
+    !OVERSEAS_CN_ASNS.has(asn) &&
+    !CARRIER_OVERSEAS_ASNS.has(asn);
+  if (mainland)
     return writeCache(
       key,
       {
         ...base,
         status: "finished",
-        method: "asn",
-        carriers: {
-          [direct.carrier]: {
-            code: direct.code,
-            rank: direct.rank,
-            confidence: "confirmed",
-            reason: "origin_asn",
-            probes: 0,
-            hits: {},
-            note: "origin_asn",
-          },
-        },
+        method: "domestic",
+        domestic: true,
+        carriers: {},
         probes: [],
         measured_at: new Date().toISOString(),
       },
       86400,
     );
-  }
   if (env.ROUTE_LIMITER) {
     const limited = await env.ROUTE_LIMITER.limit({ key: "global" }).catch(
       () => ({ success: true }),
@@ -275,12 +290,14 @@ export async function routeResult(
     direction: "to_target",
     measurement_id: id,
     measured_at: new Date().toISOString(),
+    ...beijingTime(),
+    packets: PACKETS,
   };
   if (data.status !== "finished")
     return { ...base, status: "degraded", reason: String(data.status) };
   const { carriers, probes } = classifyMeasurement(data);
   const key = new Request(
-    `${requestOrigin}/api/route/v2/${encodeURIComponent(cachePrefix(ip))}`,
+    `${requestOrigin}/api/route/v3/${encodeURIComponent(cachePrefix(ip))}`,
   );
   return writeCache(
     key,
