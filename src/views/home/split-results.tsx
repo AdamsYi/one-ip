@@ -17,6 +17,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { getGeo, inspectSite, type Site } from "./api";
 import { matchesSiteCategory } from "./category-status";
 import { ExitGroups, type SiteFilter } from "./exit-groups";
+import { ExitProfiles } from "./exit-profiles";
 import { siteCategoryLabels } from "./site-categories";
 import rawsites from "./sites.json";
 
@@ -258,7 +259,13 @@ function SiteEgressTable({
   );
 }
 
-export function SplitResults({ summary = false }: { summary?: boolean }) {
+export function SplitResults({
+  summary = false,
+  domesticIp,
+}: {
+  summary?: boolean;
+  domesticIp?: string;
+}) {
   const [round, setRound] = useState(0);
   const [detailName, setDetailName] = useState<string | null>(null);
   const [detailIp, setDetailIp] = useState<string | null>(null);
@@ -365,52 +372,29 @@ export function SplitResults({ summary = false }: { summary?: boolean }) {
       <Content>
         {summary ? (
           <div className="flex flex-col gap-2">
-            {[...exits]
-              .map((geo) => ({
-                geo,
-                siteRows: rows.filter((row) => row.geo?.ip === geo.ip),
-              }))
-              .sort((a, b) => b.siteRows.length - a.siteRows.length)
-              .map(({ geo, siteRows }) => (
-                <div
-                  key={geo.ip}
-                  className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-muted/20 p-2.5"
-                >
-                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                    <CountryFlag code={geo.country_code} />
-                    <span className="font-mono text-sm font-medium">
-                      <IpText ip={geo.ip} />
-                    </span>
-                    <span className="min-w-0 truncate text-xs text-muted-foreground">
-                      {[geo.city, geo.country, geo.isp]
-                        .filter(Boolean)
-                        .filter(
-                          (value, index, all) => all.indexOf(value) === index,
-                        )
-                        .join(" · ")}
-                    </span>
-                    <span className="ml-auto shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                      {siteRows.length} {t("home.sites")}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {siteRows.map((row) => (
-                      <button
-                        key={row.name}
-                        type="button"
-                        onClick={() => {
-                          setDetailIp(null);
-                          setDetailName(row.name);
-                        }}
-                        className="flex max-w-full items-center gap-1.5 rounded-md bg-background px-2 py-1 text-xs ring-1 ring-border hover:text-primary [&_.site-icon]:size-3.5"
-                      >
-                        <SiteLogo src={row.icon} />
-                        <span className="min-w-0 truncate">{row.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <ExitProfiles
+              domesticIp={domesticIp}
+              exits={[...exits]
+                .map((geo) => ({
+                  geo,
+                  sites: rows
+                    .filter((row) => row.geo?.ip === geo.ip)
+                    .map((row) => ({
+                      name: row.name,
+                      icon: row.icon,
+                      onSelect: () => {
+                        setDetailIp(null);
+                        setDetailName(row.name);
+                      },
+                    })),
+                }))
+                .sort((a, b) => b.sites.length - a.sites.length)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("home.exit.readableNote", [
+                rows.filter((row) => row.method === "unsupported").length,
+              ])}
+            </p>
             <p className="home-note col-span-full">
               {pending ? (
                 <Pending>{t("home.checkingRoutedEgress")}</Pending>

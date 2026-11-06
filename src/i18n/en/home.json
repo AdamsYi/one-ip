@@ -114,5 +114,21 @@
   "home.verdict.chipTransitRoute": "Transit only",
   "home.verdict.chipCleanIp": "Clean IP",
   "home.verdict.chipFairIp": "Average IP",
-  "home.verdict.chipDirtyIp": "Dirty IP"
+  "home.verdict.chipDirtyIp": "Dirty IP",
+  "home.exit.direct": "Direct (mainland)",
+  "home.exit.typeResidential": "Residential",
+  "home.exit.typeMobile": "Mobile",
+  "home.exit.typeDatacenter": "Datacenter",
+  "home.exit.typeBusiness": "Business",
+  "home.exit.purity": "Purity",
+  "home.exit.flagProxy": "Flagged proxy",
+  "home.exit.flagVpn": "Flagged VPN",
+  "home.exit.flagAbuse": "Abuse reports",
+  "home.exit.flagWarp": "WARP",
+  "home.exit.route": "China inbound",
+  "home.exit.measureRoute": "Measure this exit's route",
+  "home.exit.domesticEntry": "Mainland IP",
+  "home.exit.details": "Full report",
+  "home.exit.readableNote": "Exits are grouped by the sites that actually left through them. {0} more services (YouTube, Netflix, Telegram, GitHub…) do not echo the visitor IP on their own domains, so the browser can confirm reachability but not which exit was used.",
+  "home.egressNotReadable": "This service's domains do not echo the visitor IP; only reachability can be checked, not which exit was used."
 }

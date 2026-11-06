@@ -400,7 +400,7 @@ export function HomePage() {
           </CardContent>
         </Card>
       </div>
-      <SplitResults summary />
+      <SplitResults summary domesticIp={probes[0].data?.ip} />
       <PlatformSummary />
       <BrowserSummary />
       <Card className="home-shortcuts">

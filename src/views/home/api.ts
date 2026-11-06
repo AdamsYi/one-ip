@@ -152,11 +152,17 @@ export async function detectSite(
   if (site.method === "cftrace" && site.domain)
     geo = await trace(site.domain, signal);
   else if (
-    (site.method === "ip-text" || site.method === "ip-json") &&
+    (site.method === "ip-text" ||
+      site.method === "ip-json" ||
+      site.method === "ip-text-plain") &&
     site.url
   ) {
     let ip: string | undefined;
-    if (site.method === "ip-json") {
+    if (site.method === "ip-text-plain") {
+      ip = (
+        await request<string>(site.url, { signal, cache: "no-store" }, "text")
+      ).trim();
+    } else if (site.method === "ip-json") {
       const data = await request<{ ip?: string }>(site.url, {
         signal,
         cache: "no-store",
@@ -186,7 +192,8 @@ export async function detectSite(
       headers.get("cdn-user-ip") ??
       headers.get("x-request-ip") ??
       headers.get("x-response-cinfo");
-    if (!ip || !/^[\da-fA-F:.]+$/.test(ip))
+    // Some CDNs mask the address to its network (x.y.z.0); that is not an exit.
+    if (!ip || !/^[\da-fA-F:.]+$/.test(ip) || /^\d+\.\d+\.\d+\.0$/.test(ip))
       throw new Error(t("home.noReadableEgressIpObtained"));
     geo = { ip, source: site.name };
   }

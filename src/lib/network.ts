@@ -82,6 +82,8 @@ export function parseTrace(text: string) {
     ip: fields.ip,
     country_code: fields.loc,
     colo: fields.colo,
+    warp:
+      fields.warp === "on" || fields.warp === "plus" || fields.gateway === "on",
     source: "Cloudflare Trace",
   };
 }

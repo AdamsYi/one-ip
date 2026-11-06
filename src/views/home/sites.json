@@ -397,5 +397,112 @@
     "domain": "www.lazada.com",
     "icon": "https://icons.duckduckgo.com/ip3/www.lazada.com.ico",
     "extra": ["ecommerce"]
+  },
+  {
+    "name": "AWS",
+    "type": "international",
+    "method": "ip-text-plain",
+    "url": "https://checkip.amazonaws.com/",
+    "icon": "https://icons.duckduckgo.com/ip3/aws.amazon.com.ico",
+    "extra": ["static"]
+  },
+  {
+    "name": "YouTube",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "www.youtube.com",
+    "icon": "https://icons.duckduckgo.com/ip3/youtube.com.ico",
+    "extra": ["media"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "Google",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "www.google.com",
+    "icon": "https://icons.duckduckgo.com/ip3/google.com.ico",
+    "extra": ["tools"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "Gemini",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "gemini.google.com",
+    "icon": "https://icons.duckduckgo.com/ip3/google.com.ico",
+    "extra": ["ai"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "Netflix",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "www.netflix.com",
+    "icon": "https://icons.duckduckgo.com/ip3/netflix.com.ico",
+    "extra": ["media"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "Disney+",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "www.disneyplus.com",
+    "icon": "https://icons.duckduckgo.com/ip3/disneyplus.com.ico",
+    "extra": ["media"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "Spotify",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "open.spotify.com",
+    "icon": "https://icons.duckduckgo.com/ip3/spotify.com.ico",
+    "extra": ["media"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "GitHub",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "github.com",
+    "icon": "https://icons.duckduckgo.com/ip3/github.com.ico",
+    "extra": ["dev"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "TikTok",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "www.tiktok.com",
+    "icon": "https://icons.duckduckgo.com/ip3/tiktok.com.ico",
+    "extra": ["social"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "Steam",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "store.steampowered.com",
+    "icon": "https://icons.duckduckgo.com/ip3/steampowered.com.ico",
+    "extra": ["media"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "Apple",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "www.apple.com",
+    "icon": "https://icons.duckduckgo.com/ip3/apple.com.ico",
+    "extra": ["tools"],
+    "noteKey": "home.egressNotReadable"
+  },
+  {
+    "name": "Microsoft",
+    "type": "international",
+    "method": "unsupported",
+    "domain": "www.microsoft.com",
+    "icon": "https://icons.duckduckgo.com/ip3/microsoft.com.ico",
+    "extra": ["tools"],
+    "noteKey": "home.egressNotReadable"
   }
 ]

@@ -10,6 +10,8 @@ export interface Geo {
   longitude?: number;
   timezone?: string;
   source?: string;
+  /** Cloudflare trace: the request came through Cloudflare WARP / Zero Trust. */
+  warp?: boolean;
 }
 export interface Risk {
   available: boolean;
