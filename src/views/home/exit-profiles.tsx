@@ -8,6 +8,7 @@ import { SiteLogo } from "@/components/site-logo";
 import { IpText, Pending } from "@/components/toolkit";
 import { t, type MessageKey } from "@/i18n";
 import { ipScoreColor } from "@/lib/ip-score";
+import { ipTypeLabel, typeVotesText } from "@/lib/ip-type";
 import { endpoint } from "@/lib/network";
 import type { Geo } from "@/lib/types";
 import { lookupIp } from "@/views/ip/api";
@@ -44,22 +45,6 @@ function rankClass(rank: number) {
   if (rank >= 4) return "text-emerald-600 dark:text-emerald-400";
   if (rank >= 3) return "text-amber-600 dark:text-amber-400";
   return "text-foreground";
-}
-
-function ipTypeKey(
-  quality:
-    | {
-        isResidential?: boolean;
-        is_mobile?: boolean;
-        is_datacenter?: boolean;
-      }
-    | undefined,
-): MessageKey | null {
-  if (!quality) return null;
-  if (quality.is_mobile) return "home.exit.typeMobile";
-  if (quality.isResidential) return "home.exit.typeResidential";
-  if (quality.is_datacenter) return "home.exit.typeDatacenter";
-  return "home.exit.typeBusiness";
 }
 
 function ExitProfile({
@@ -106,7 +91,8 @@ function ExitProfile({
     refetchOnWindowFocus: false,
   });
   const coffee = quality.data?.coffee;
-  const typeKey = ipTypeKey(coffee);
+  const typeLabel = ipTypeLabel(coffee?.ip_type);
+  const votes = typeVotesText(coffee?.type_votes);
   const score =
     typeof coffee?.trust_score === "number" ? coffee.trust_score : null;
   const network =
@@ -133,11 +119,22 @@ function ExitProfile({
             {t("home.exit.direct")}
           </span>
         ) : (
-          typeKey && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
-              {t(typeKey)}
+          typeLabel && (
+            <span
+              className="rounded-full bg-muted px-2 py-0.5 text-xs"
+              title={votes ?? undefined}
+            >
+              {typeLabel}
             </span>
           )
+        )}
+        {coffee?.sources_missing && (
+          <span
+            className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400"
+            title={coffee.sources_missing.join(", ")}
+          >
+            {t("ipType.incomplete")}
+          </span>
         )}
         {score !== null && (
           <span
@@ -160,6 +157,11 @@ function ExitProfile({
           {sites.length} {t("home.sites")}
         </span>
       </div>
+      {!direct && votes && (
+        <p className="text-xs text-muted-foreground">
+          {t("ipType.votes")} {votes}
+        </p>
+      )}
       <p className="min-w-0 truncate text-xs text-muted-foreground">
         {[
           network,

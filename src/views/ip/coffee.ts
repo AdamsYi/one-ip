@@ -38,6 +38,16 @@ export interface CoffeeIp {
   is_bogon?: boolean;
   is_datacenter?: boolean;
   isResidential?: boolean;
+  ip_type?:
+    | "residential"
+    | "isp_hosted"
+    | "datacenter"
+    | "mobile"
+    | "business"
+    | "mixed"
+    | "unknown";
+  type_votes?: { source: string; raw: string; type: string }[];
+  sources_missing?: string[];
   is_vpn?: boolean;
   is_proxy?: boolean;
   is_tor?: boolean;

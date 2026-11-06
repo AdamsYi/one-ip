@@ -1,4 +1,5 @@
 import { t } from "@/i18n";
+import { ipTypeLabel } from "@/lib/ip-type";
 import { coffeeThreatLabels, type CoffeeIp } from "./coffee.ts";
 
 export function ipProfile(data: CoffeeIp) {
@@ -24,15 +25,17 @@ export function ipProfile(data: CoffeeIp) {
   const conflict = data.isResidential === true && data.is_datacenter === true;
   const type = data.is_public_service
     ? t("common.publicService")
-    : conflict
-      ? t("ip.profile.conflictingTypes")
-      : data.is_mobile
-        ? t("common.mobileNetwork")
-        : data.isResidential
-          ? t("common.residentialIp")
-          : data.is_datacenter
-            ? t("common.datacenter")
-            : t("common.unknown");
+    : ipTypeLabel(data.ip_type)
+      ? ipTypeLabel(data.ip_type)!
+      : conflict
+        ? t("ip.profile.conflictingTypes")
+        : data.is_mobile
+          ? t("common.mobileNetwork")
+          : data.isResidential
+            ? t("common.residentialIp")
+            : data.is_datacenter
+              ? t("common.datacenter")
+              : t("common.unknown");
   const country = data.countryCode?.trim().toUpperCase();
   const registered = data.registered_country_code?.trim().toUpperCase();
   const sameCountry =

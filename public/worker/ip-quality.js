@@ -246,6 +246,47 @@ export function computeTrust(m) {
   };
 }
 
+/**
+ * One IP-type verdict from per-source votes. Each source says what it sees:
+ * ipapi.is reads the block's registered owner (company.type) and the ASN
+ * type separately; proxycheck and AbuseIPDB classify the network.
+ * - isp_hosted: the ASN is an ISP and at least one source sees a residential
+ *   / ISP network, but the block is registered to a hosting company — the
+ *   "ISP / native" VPS products sold as 家宽 VPS.
+ * - residential / datacenter / mobile / business when sources agree.
+ */
+export function classifyIpType(votes) {
+  const count = (type) => votes.filter((vote) => vote.type === type).length;
+  if (count("mobile") > 0 && count("mobile") >= count("residential"))
+    return "mobile";
+  const homeLike = count("residential") + count("isp");
+  const hosting = count("hosting");
+  const asnIsp = votes.some(
+    (vote) => vote.source === "asn" && vote.type === "isp",
+  );
+  if (hosting > 0 && homeLike > 0) return asnIsp ? "isp_hosted" : "mixed";
+  if (hosting > 0) return "datacenter";
+  if (count("residential") > 0) return "residential";
+  if (count("isp") > 0) return "residential";
+  if (count("business") > 0) return "business";
+  return "unknown";
+}
+
+function normalizeType(value) {
+  const text = String(value ?? "").toLowerCase();
+  if (!text) return null;
+  if (/mobile|cellular|wireless/.test(text)) return "mobile";
+  if (
+    /data ?center|hosting|web hosting|transit|content delivery|cdn/.test(text)
+  )
+    return "hosting";
+  if (/residential|fixed line isp|home/.test(text)) return "residential";
+  if (/^isp$|isp/.test(text)) return "isp";
+  if (/business|commercial|education|government|university|banking/.test(text))
+    return "business";
+  return null;
+}
+
 function boolOr(...values) {
   return values.find((value) => typeof value === "boolean");
 }
@@ -403,6 +444,41 @@ export async function ipQuality(
     });
   }
 
+  const typeVotes = [
+    {
+      source: "ipapi_is",
+      raw: typeof ipapi?.company === "object" ? ipapi.company.type : undefined,
+    },
+    {
+      source: "asn",
+      raw: typeof ipapi?.asn === "object" ? ipapi.asn.type : undefined,
+    },
+    { source: "proxycheck", raw: network.type },
+    { source: "abuseipdb", raw: abuse?.usageType },
+    {
+      source: "ip_api",
+      raw: ipApi
+        ? ipApi.mobile
+          ? "mobile"
+          : ipApi.hosting
+            ? "hosting"
+            : undefined
+        : undefined,
+    },
+  ]
+    .map((vote) => ({ ...vote, type: normalizeType(vote.raw) }))
+    .filter((vote) => vote.type);
+  const typeVerdict = classifyIpType(typeVotes);
+  // Missing keyed sources make the type and score less certain; say so
+  // instead of silently scoring higher.
+  const keyedMissing = [
+    ["ipapi_is", env.IPAPI_IS_KEY, ipapi],
+    ["proxycheck", env.PROXYCHECK_KEY, proxycheck],
+    ["abuseipdb", env.ABUSEIPDB_KEY, abuse],
+  ]
+    .filter(([, key, result]) => key && !result)
+    .map(([name]) => name);
+
   const abuserScore =
     typeof ipapi?.company === "object" ? ipapi.company.abuser_score : undefined;
   const riskSources = [ipapi, proxycheck, abuse].filter(Boolean).length;
@@ -424,8 +500,9 @@ export async function ipQuality(
       detections.tor,
       detections.anonymous,
     ].some((flag) => flag === true),
-    hosting: isDatacenter === true,
-    companyType,
+    // ISP-hosted blocks carry the business baseline, not the datacenter one.
+    hosting: typeVerdict === "datacenter",
+    companyType: typeVerdict === "isp_hosted" ? "business" : companyType,
     registeredCc: origin?.cc,
     geoCc: geoCountryCode,
     rpkiStatus: rpki,
@@ -440,8 +517,13 @@ export async function ipQuality(
   }));
   for (const extra of trust.extras)
     threats.push({ label: extra, severity: "low" });
-  if (isDatacenter === true)
+  if (typeVerdict === "datacenter")
     threats.push({ label: "数据中心 IP", severity: "info" });
+  if (typeVerdict === "isp_hosted")
+    threats.push({
+      label: "运营商段托管（网段登记在托管商名下）",
+      severity: "info",
+    });
   if (isPublicService === true)
     threats.push({ label: "公共 DNS / 任播服务", severity: "info" });
 
@@ -475,12 +557,24 @@ export async function ipQuality(
     asn_allocated: asnInfo?.allocated || undefined,
     rdns: ptr ?? undefined,
     is_bogon: ipapi?.is_bogon,
-    is_datacenter: isDatacenter,
+    ip_type: typeVerdict,
+    type_votes: typeVotes.map(({ source, raw, type }) => ({
+      source,
+      raw: String(raw),
+      type,
+    })),
+    sources_missing: keyedMissing.length ? keyedMissing : undefined,
+    is_datacenter:
+      typeVerdict === "datacenter"
+        ? true
+        : ["residential", "isp_hosted", "mobile"].includes(typeVerdict)
+          ? false
+          : isDatacenter,
     isResidential:
-      isDatacenter === true || isMobile === true
-        ? false
-        : companyType === "isp" || networkType === "residential"
-          ? true
+      typeVerdict === "residential"
+        ? true
+        : ["datacenter", "mobile", "isp_hosted"].includes(typeVerdict)
+          ? false
           : undefined,
     is_vpn: isVpn,
     is_proxy: isProxy,
@@ -504,7 +598,7 @@ export async function ipQuality(
     registered_country: origin?.cc || undefined,
     geo_sources: geoSources.length ? geoSources : undefined,
     trust_score: isPublicService === true ? null : trust.trust_score,
-    confidence: trust.confidence,
+    confidence: keyedMissing.length ? "low" : trust.confidence,
     sources_ok: [ipapi, proxycheck, abuse, origin, geo, ipApi].filter(Boolean)
       .length,
     source_detail: {

@@ -121,12 +121,13 @@ export default {
         ].join("");
         return await cachedJson(
           new URL(
-            `/api/ip/quality/v3${sourceConfig}/${encodeURIComponent(ip)}`,
+            `/api/ip/quality/v4${sourceConfig}/${encodeURIComponent(ip)}`,
             url.origin,
           ),
           21600,
           () => ipQuality(ip, env, url.origin),
-          (data) => data.sources_ok >= 2,
+          // A failed keyed source would freeze a partial verdict for 6h.
+          (data) => data.sources_ok >= 2 && !data.sources_missing,
         );
       }
       if (path.startsWith("/datacenter/")) {

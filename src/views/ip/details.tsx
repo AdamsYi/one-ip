@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { t } from "@/i18n";
 import { ipScoreColor } from "@/lib/ip-score";
+import { ipTypeLabel, typeVotesText } from "@/lib/ip-type";
 import type { Geo } from "@/lib/types";
 import { hideIpAtom } from "@/store/privacy";
 import { useAtom } from "jotai";
@@ -206,6 +207,19 @@ export function IpDetails({
           <IpFacts
             rows={[
               [t("ip.registeredCountry"), d.registered_country],
+              [
+                t("ipType.title"),
+                ipTypeLabel(d.ip_type) ? (
+                  <span>
+                    {ipTypeLabel(d.ip_type)}
+                    {typeVotesText(d.type_votes) && (
+                      <span className="block text-xs text-muted-foreground">
+                        {typeVotesText(d.type_votes)}
+                      </span>
+                    )}
+                  </span>
+                ) : undefined,
+              ],
               [t("common.datacenter"), yesNo(d.is_datacenter)],
               [t("common.mobileNetwork"), yesNo(d.is_mobile)],
               [t("ip.company"), d.company_name],

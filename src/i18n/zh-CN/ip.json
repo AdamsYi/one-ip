@@ -526,5 +526,14 @@
   "ip.route.measuredPeak": "测于北京时间 {0} 点（晚高峰）",
   "ip.route.measuredOffPeak": "测于北京时间 {0} 点（非晚高峰，晚高峰表现可能更差）",
   "ip.route.reason.cn2_then_163": "进 CN2（59.43 ×{0} 跳）后又在服务器一侧走了 {1} 跳 163 → 按混合计",
-  "ip.route.reason.cmi_via_cmin2": "经 {0} 跳 CMIN2 转接后又走 {1} 跳 CMI 到服务器 → 实为 CMI"
+  "ip.route.reason.cmi_via_cmin2": "经 {0} 跳 CMIN2 转接后又走 {1} 跳 CMI 到服务器 → 实为 CMI",
+  "ipType.title": "IP 类型",
+  "ipType.residential": "家宽",
+  "ipType.ispHosted": "运营商段托管",
+  "ipType.datacenter": "机房",
+  "ipType.mobile": "移动网络",
+  "ipType.business": "商宽",
+  "ipType.mixed": "各源说法不一",
+  "ipType.incomplete": "数据不全",
+  "ipType.votes": "各源判定："
 }

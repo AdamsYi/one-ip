@@ -4,6 +4,7 @@ import worker from "../.worker-test/index.js";
 import {
   abuserLabelScore,
   cidrMatch,
+  classifyIpType,
   computeTrust,
   ipQuality,
 } from "../public/worker/ip-quality.js";
@@ -261,6 +262,8 @@ test("ipQuality degrades when a keyed source fails and skips sources without key
   const data = await ipQuality("95.169.12.201", allKeys);
   assert.equal(data.sources_ok, 4);
   assert.equal(data.source_detail.abuseipdb.state, "unavailable");
+  assert.deepEqual(data.sources_missing, ["abuseipdb"]);
+  assert.equal(data.confidence, "low");
   assert.equal(data.source_detail.ip_api_fallback.state, "skipped");
   assert.equal(data.trust_score, 80);
 
@@ -275,22 +278,18 @@ test("ipQuality degrades when a keyed source fails and skips sources without key
 });
 
 test("ipQuality falls back to ip-api type classification without keys", async (t) => {
-  t.mock.method(
-    globalThis,
-    "fetch",
-    async (url) => {
-      url = String(url);
-      if (url.startsWith("http://ip-api.com/"))
-        return Response.json({
-          status: "success",
-          query: "95.169.12.201",
-          hosting: true,
-          mobile: false,
-          proxy: true,
-        });
-      return sourceRouter()(url);
-    },
-  );
+  t.mock.method(globalThis, "fetch", async (url) => {
+    url = String(url);
+    if (url.startsWith("http://ip-api.com/"))
+      return Response.json({
+        status: "success",
+        query: "95.169.12.201",
+        hosting: true,
+        mobile: false,
+        proxy: true,
+      });
+    return sourceRouter()(url);
+  });
   const data = await ipQuality("95.169.12.201", {});
   assert.equal(data.source_detail.ip_api_fallback.state, "ok");
   assert.equal(data.is_datacenter, true);
@@ -376,4 +375,114 @@ test("route /api/ip/quality serves the aggregated payload", async (t) => {
     ).status,
     400,
   );
+});
+
+test("classifyIpType separates ISP-hosted blocks from datacenters and homes", () => {
+  const v = (source, type) => ({ source, type });
+  // Seattle "家宽 VPS": hosting owner, ISP ASN, residential per proxycheck.
+  assert.equal(
+    classifyIpType([
+      v("ipapi_is", "hosting"),
+      v("asn", "isp"),
+      v("proxycheck", "residential"),
+      v("abuseipdb", "residential"),
+    ]),
+    "isp_hosted",
+  );
+  assert.equal(
+    classifyIpType([
+      v("ipapi_is", "hosting"),
+      v("asn", "hosting"),
+      v("proxycheck", "hosting"),
+    ]),
+    "datacenter",
+  );
+  assert.equal(
+    classifyIpType([
+      v("ipapi_is", "isp"),
+      v("asn", "isp"),
+      v("proxycheck", "residential"),
+    ]),
+    "residential",
+  );
+  assert.equal(
+    classifyIpType([v("ipapi_is", "hosting"), v("proxycheck", "residential")]),
+    "mixed",
+  );
+  assert.equal(
+    classifyIpType([v("proxycheck", "mobile"), v("asn", "isp")]),
+    "mobile",
+  );
+  assert.equal(classifyIpType([v("ipapi_is", "business")]), "business");
+  assert.equal(classifyIpType([]), "unknown");
+});
+
+test("ipQuality reports an ISP-hosted block with per-source votes and a business baseline", async (t) => {
+  const ip = "104.247.120.205";
+  t.mock.method(
+    globalThis,
+    "fetch",
+    sourceRouter({
+      ip,
+      ipapi: {
+        ...defaultIpapi(ip),
+        is_datacenter: true,
+        company: {
+          name: "Ryan C. Barker, Sole Proprietorship",
+          type: "hosting",
+          abuser_score: "0.0068 (Low)",
+        },
+        asn: {
+          asn: 21743,
+          type: "isp",
+          descr: "ANL-36 - Atlas Networks Corporation, US",
+          org: "Atlas Networks Corporation",
+        },
+      },
+      proxycheck: {
+        ip,
+        network: {
+          asn: "AS21743",
+          type: "Residential",
+          provider: "Atlas Networks Corporation",
+        },
+        detections: {
+          proxy: false,
+          vpn: false,
+          compromised: false,
+          scraper: false,
+          tor: false,
+          hosting: false,
+          anonymous: false,
+          risk: 0,
+          confidence: 100,
+        },
+      },
+      abuse: {
+        abuseConfidenceScore: 0,
+        totalReports: 0,
+        isTor: false,
+        usageType: "Fixed Line ISP",
+      },
+    }),
+  );
+  const data = await ipQuality(ip, allKeys);
+  assert.equal(data.ip_type, "isp_hosted");
+  assert.equal(data.is_datacenter, false);
+  assert.equal(data.isResidential, false);
+  assert.deepEqual(
+    data.type_votes.map((vote) => [vote.source, vote.raw, vote.type]),
+    [
+      ["ipapi_is", "hosting", "hosting"],
+      ["asn", "isp", "isp"],
+      ["proxycheck", "Residential", "residential"],
+      ["abuseipdb", "Fixed Line ISP", "residential"],
+    ],
+  );
+  assert.equal(data.sources_missing, undefined);
+  // business baseline 10 + registry/geo mismatch 5 (mock Cymru says CA)
+  assert.equal(data.trust_score, 85);
+  const labels = data.intelligence.threats.map((threat) => threat.label);
+  assert.ok(!labels.includes("数据中心 IP"));
+  assert.ok(labels.some((label) => label.startsWith("运营商段托管")));
 });

@@ -526,5 +526,14 @@
   "ip.route.measuredPeak": "Measured at {0}:00 Beijing time (evening peak)",
   "ip.route.measuredOffPeak": "Measured at {0}:00 Beijing time (off-peak; evening peak may be worse)",
   "ip.route.reason.cn2_then_163": "Entered CN2 (59.43 ×{0} hops) then rode {1} 163 hops on the server side → mixed",
-  "ip.route.reason.cmi_via_cmin2": "{0} CMIN2 transit hops, then {1} CMI hops to the server → effectively CMI"
+  "ip.route.reason.cmi_via_cmin2": "{0} CMIN2 transit hops, then {1} CMI hops to the server → effectively CMI",
+  "ipType.title": "IP type",
+  "ipType.residential": "Residential",
+  "ipType.ispHosted": "ISP-hosted",
+  "ipType.datacenter": "Datacenter",
+  "ipType.mobile": "Mobile",
+  "ipType.business": "Business",
+  "ipType.mixed": "Sources disagree",
+  "ipType.incomplete": "Incomplete data",
+  "ipType.votes": "Per source:"
 }
